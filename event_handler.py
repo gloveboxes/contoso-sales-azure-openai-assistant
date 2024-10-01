@@ -171,12 +171,11 @@ class EventHandler(AsyncAssistantEventHandler):
 
         # triggered when the user stops a chat
         except asyncio.exceptions.CancelledError:
-            pass
-            # if stream and stream.current_run and stream.current_run.status != "completed":
-            #     await self.async_openai_client.beta.threads.runs.cancel(
-            #         run_id=stream.current_run.id, thread_id=stream.current_run.thread_id
-            #     )
-            #     await cl.Message(content=f"Run cancelled. {stream.current_run.id}").send()
+            if stream and stream.current_run and stream.current_run.status != "completed":
+                await self.async_openai_client.beta.threads.runs.cancel(
+                    run_id=stream.current_run.id, thread_id=stream.current_run.thread_id
+                )
+                await cl.Message(content=f"Run cancelled. {stream.current_run.id}").send()
 
         except Exception as e:
             await cl.Message(content=f"An error occurred: {e}").send()
