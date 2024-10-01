@@ -222,12 +222,11 @@ async def get_attachments(message: cl.Message, async_openai_client: AsyncAzureOp
 
     await cl.Message(content="Uploading files.").send()
     message_files = []
+    
     for path in file_paths:
         with Path(path).open("rb") as file:
-            message_file = await async_openai_client.files.create(file=file, purpose="assistants")
-
-        message_file = {"file_id": message_file.id, "tools": [{"type": "file_search"}]}
-        message_files.append(message_file)
+            uploaded_file = await async_openai_client.files.create(file=file, purpose="assistants")
+            message_files.append({"file_id": uploaded_file.id, "tools": [{"type": "file_search"}]})
 
     await cl.Message(content="Uploading completed.").send()
     return message_files
@@ -268,7 +267,11 @@ async def main(message: cl.Message) -> None:
 
     # triggered when the user stops a chat
     except asyncio.exceptions.CancelledError:
-        pass
+        if stream and stream.current_run and stream.current_run.status != "completed":
+            await async_openai_client.beta.threads.runs.cancel(
+                run_id=stream.current_run.id, thread_id=stream.current_run.thread_id
+            )
+            await cl.Message(content=f"Run cancelled. {stream.current_run.id}").send()
 
     except BadRequestError as e:
         print(e)
