@@ -1,4 +1,3 @@
-import asyncio
 import json
 import re
 from typing_extensions import override
@@ -22,12 +21,6 @@ class EventHandler(AsyncAssistantEventHandler):
         self.async_openai_client = async_openai_client
         self.function_map = function_map
         self.citations_index = 1
-
-    @override
-    async def on_event(self, event):
-        if event.event == "thread.run.created":
-            run = event.data
-            cl.user_session.set("run_id", run.id)
 
     async def get_file_annotation(self, file_path, annotation) -> tuple:
         file_name = annotation.text.split("/")[-1]
@@ -129,52 +122,43 @@ class EventHandler(AsyncAssistantEventHandler):
         """This method is called when a tool call is done."""
         """ Parallel tool calling is enabled by default and it's important to iterate through the tool calls. """
 
-        try:
-            if tool_call.type == "function" and self.current_run.status == "requires_action":
-                tool_calls = self.current_run.required_action.submit_tool_outputs.tool_calls
-                function_tool_calls = [call for call in tool_calls if call.type == "function"]
-                tool_outputs = []
+        if tool_call.type == "function" and self.current_run.status == "requires_action":
+            tool_calls = self.current_run.required_action.submit_tool_outputs.tool_calls
+            function_tool_calls = [call for call in tool_calls if call.type == "function"]
+            tool_outputs = []
 
-                for submit_tool_call in function_tool_calls:
-                    function = self.function_map.get(submit_tool_call.function.name)
+            for submit_tool_call in function_tool_calls:
+                function = self.function_map.get(submit_tool_call.function.name)
 
-                    try:
-                        arguments = json.loads(submit_tool_call.function.arguments)
-                        result: QueryResults = await function(arguments)
-                    except json.JSONDecodeError as e:
-                        result = QueryResults(
-                            display_format=submit_tool_call.function.arguments,
-                            json_format=str(e),
-                        )
+                try:
+                    arguments = json.loads(submit_tool_call.function.arguments)
+                    result: QueryResults = await function(arguments)
+                except json.JSONDecodeError as e:
+                    result = QueryResults(
+                        display_format=submit_tool_call.function.arguments,
+                        json_format=str(e),
+                    )
 
-                    tool_outputs.append({"tool_call_id": submit_tool_call.id, "output": result.json_format})
-                    await self.update_chainlit_function_ui("sql", submit_tool_call, result)
+                tool_outputs.append({"tool_call_id": submit_tool_call.id, "output": result.json_format})
+                await self.update_chainlit_function_ui("sql", submit_tool_call, result)
 
-                if tool_outputs:
-                    async with self.async_openai_client.beta.threads.runs.submit_tool_outputs_stream(
-                        thread_id=self.current_run.thread_id,
-                        run_id=self.current_run.id,
-                        tool_outputs=tool_outputs,
-                        event_handler=EventHandler(
-                            self.function_map,
-                            self.assistant_name,
-                            self.async_openai_client,
-                        ),
-                    ) as stream:
-                        await stream.until_done()
+            if tool_outputs:
+                async with self.async_openai_client.beta.threads.runs.submit_tool_outputs_stream(
+                    thread_id=self.current_run.thread_id,
+                    run_id=self.current_run.id,
+                    tool_outputs=tool_outputs,
+                    event_handler=EventHandler(
+                        self.function_map,
+                        self.assistant_name,
+                        self.async_openai_client,
+                    ),
+                ) as stream:
+                    await stream.until_done()
 
-                    await self.current_message.update()
+                await self.current_message.update()
 
-            elif tool_call.type == "code_interpreter":
-                self.current_step.end = utc_now()
-                await self.current_step.update()
-            elif tool_call.type == "file_search":
-                pass
-
-        # triggered when the user stops a chat
-        except asyncio.exceptions.CancelledError:
+        elif tool_call.type == "code_interpreter":
+            self.current_step.end = utc_now()
+            await self.current_step.update()
+        elif tool_call.type == "file_search":
             pass
-
-        except Exception as e:
-            await cl.Message(content=f"An error occurred: {e}").send()
-            await cl.Message(content="Please try again in a moment.").send()

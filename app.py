@@ -3,6 +3,7 @@ import json
 import os
 from typing import Any, Callable, Dict
 from pathlib import Path
+from contextlib import suppress
 
 import chainlit as cl
 from chainlit.config import config
@@ -197,20 +198,15 @@ async def on_chat_resume(thread: ThreadDict):
     await start_chat()
 
 
-@cl.on_stop
-async def stop_chat():
-    # run_id = cl.user_session.get("run_id")
-    if run_id := cl.user_session.get("run_id"):
-        try:
-            thread_id = cl.user_session.get("thread_id")
-            async_openai_client = get_openai_client()
-            if thread_id and run_id and async_openai_client:
-                await async_openai_client.beta.threads.runs.cancel(run_id=run_id, thread_id=thread_id)
-                await cl.Message(content=f"Run cancelled. {run_id}").send()
-        except Exception:
-            pass
-        finally:
-            cl.user_session.set("run_id", None)
+async def cancel_thread_run(thread_id: str) -> None:
+    async_openai_client = get_openai_client()
+    if thread_id and async_openai_client:
+        runs = await async_openai_client.beta.threads.runs.list(thread_id=thread_id)
+        for run in runs.data:
+            print(f"Run ID: {run.id}, Status: {run.status}")
+            if run.status not in ["completed", "cancelled", "expired"]:
+                with suppress(Exception):
+                    await async_openai_client.beta.threads.runs.cancel(run_id=run.id, thread_id=thread_id)
 
 
 async def get_attachments(message: cl.Message, async_openai_client: AsyncAzureOpenAI) -> Dict:
@@ -232,6 +228,7 @@ async def get_attachments(message: cl.Message, async_openai_client: AsyncAzureOp
 
 @cl.on_message
 async def main(message: cl.Message) -> None:
+    completed = False
     thread_id = cl.user_session.get("thread_id")
     async_openai_client = get_openai_client()
 
@@ -263,6 +260,8 @@ async def main(message: cl.Message) -> None:
         ) as stream:
             await stream.until_done()
 
+        completed = True
+
     # triggered when the user stops a chat
     except asyncio.exceptions.CancelledError:
         pass
@@ -273,3 +272,6 @@ async def main(message: cl.Message) -> None:
     except Exception as e:
         await cl.Message(content=f"An error occurred: {e}").send()
         await cl.Message(content="Please try again in a moment.").send()
+    finally:
+        if not completed:
+            await cancel_thread_run(thread_id)
