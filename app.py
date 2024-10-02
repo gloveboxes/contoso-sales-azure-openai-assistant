@@ -8,7 +8,7 @@ from contextlib import suppress
 import chainlit as cl
 from chainlit.config import config
 from chainlit.types import ThreadDict
-from openai import AsyncAzureOpenAI, AzureOpenAI, BadRequestError
+from openai import AsyncAzureOpenAI, AzureOpenAI
 from dotenv import load_dotenv
 import httpx
 import openai
@@ -199,14 +199,15 @@ async def on_chat_resume(thread: ThreadDict):
 
 
 async def cancel_thread_run(thread_id: str) -> None:
-    async_openai_client = get_openai_client()
-    if thread_id and async_openai_client:
-        runs = await async_openai_client.beta.threads.runs.list(thread_id=thread_id)
-        for run in runs.data:
-            print(f"Run ID: {run.id}, Status: {run.status}")
-            if run.status not in ["completed", "cancelled", "expired"]:
-                with suppress(Exception):
-                    await async_openai_client.beta.threads.runs.cancel(run_id=run.id, thread_id=thread_id)
+    client = get_openai_client()
+    if not thread_id or not client:
+        return
+    
+    runs = await client.beta.threads.runs.list(thread_id=thread_id)
+    for run in runs.data:
+        if run.status not in ["completed", "cancelled", "expired"]:
+            with suppress(Exception):
+                await client.beta.threads.runs.cancel(run_id=run.id, thread_id=thread_id)
 
 
 async def get_attachments(message: cl.Message, async_openai_client: AsyncAzureOpenAI) -> Dict:
@@ -236,9 +237,9 @@ async def main(message: cl.Message) -> None:
         await cl.Message(content="An error occurred. Please try again later.").send()
         return
 
-    message_files = await get_attachments(message, async_openai_client)
-
     try:
+        message_files = await get_attachments(message, async_openai_client)
+
         # Add a Message to the Thread
         await async_openai_client.beta.threads.messages.create(
             thread_id=thread_id,
@@ -265,9 +266,6 @@ async def main(message: cl.Message) -> None:
     # triggered when the user stops a chat
     except asyncio.exceptions.CancelledError:
         pass
-
-    except BadRequestError as e:
-        print(e)
 
     except Exception as e:
         await cl.Message(content=f"An error occurred: {e}").send()
