@@ -199,20 +199,18 @@ async def on_chat_resume(thread: ThreadDict):
 
 @cl.on_stop
 async def stop_chat():
-    current_run = cl.user_session.get("current_run")
-    if current_run:
+    # run_id = cl.user_session.get("run_id")
+    if run_id := cl.user_session.get("run_id"):
         try:
-            thread_id = getattr(current_run, "thread_id", None)
-            run_id = getattr(current_run, "run_id", None)
-            status = getattr(current_run, "status", None)
+            thread_id = cl.user_session.get("thread_id")
             async_openai_client = get_openai_client()
-            if thread_id and run_id and async_openai_client and status != "completed":
+            if thread_id and run_id and async_openai_client:
                 await async_openai_client.beta.threads.runs.cancel(run_id=run_id, thread_id=thread_id)
                 await cl.Message(content=f"Run cancelled. {run_id}").send()
         except Exception:
             pass
         finally:
-            cl.user_session.set("current_run", None)
+            cl.user_session.set("run_id", None)
 
 
 async def get_attachments(message: cl.Message, async_openai_client: AsyncAzureOpenAI) -> Dict:
@@ -222,7 +220,7 @@ async def get_attachments(message: cl.Message, async_openai_client: AsyncAzureOp
 
     await cl.Message(content="Uploading files.").send()
     message_files = []
-    
+
     for path in file_paths:
         with Path(path).open("rb") as file:
             uploaded_file = await async_openai_client.files.create(file=file, purpose="assistants")
@@ -267,11 +265,12 @@ async def main(message: cl.Message) -> None:
 
     # triggered when the user stops a chat
     except asyncio.exceptions.CancelledError:
-        if stream and stream.current_run and stream.current_run.status != "completed":
-            await async_openai_client.beta.threads.runs.cancel(
-                run_id=stream.current_run.id, thread_id=stream.current_run.thread_id
-            )
-            await cl.Message(content=f"Run cancelled. {stream.current_run.id}").send()
+        pass
+        # if stream and stream.current_run and stream.current_run.status != "completed":
+        #     await async_openai_client.beta.threads.runs.cancel(
+        #         run_id=stream.current_run.id, thread_id=stream.current_run.thread_id
+        #     )
+        #     await cl.Message(content=f"Run cancelled. {stream.current_run.id}").send()
 
     except BadRequestError as e:
         print(e)

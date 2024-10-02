@@ -23,14 +23,16 @@ class EventHandler(AsyncAssistantEventHandler):
         self.function_map = function_map
         self.citations_index = 1
 
+    @override
+    async def on_event(self, event):
+        if event.event == "thread.run.created":
+            run = event.data
+            cl.user_session.set("run_id", run.id)
+
     async def get_file_annotation(self, file_path, annotation) -> tuple:
         file_name = annotation.text.split("/")[-1]
         content = await self.async_openai_client.files.content(file_path.file_id)
         return content.content, file_name
-
-    @override
-    async def on_run_step_created(self, run_step):
-        cl.user_session.set("current_run", run_step)
 
     @override
     async def on_text_created(self: "EventHandler", text) -> None:
@@ -171,11 +173,12 @@ class EventHandler(AsyncAssistantEventHandler):
 
         # triggered when the user stops a chat
         except asyncio.exceptions.CancelledError:
-            if stream and stream.current_run and stream.current_run.status != "completed":
-                await self.async_openai_client.beta.threads.runs.cancel(
-                    run_id=stream.current_run.id, thread_id=stream.current_run.thread_id
-                )
-                await cl.Message(content=f"Run cancelled. {stream.current_run.id}").send()
+            pass
+            # if stream and stream.current_run and stream.current_run.status != "completed":
+            #     await self.async_openai_client.beta.threads.runs.cancel(
+            #         run_id=stream.current_run.id, thread_id=stream.current_run.thread_id
+            #     )
+            #     await cl.Message(content=f"Run cancelled. {stream.current_run.id}").send()
 
         except Exception as e:
             await cl.Message(content=f"An error occurred: {e}").send()
