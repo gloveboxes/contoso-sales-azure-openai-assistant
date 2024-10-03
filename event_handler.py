@@ -1,10 +1,12 @@
 import json
 import re
-from typing_extensions import override
-from openai import AsyncAssistantEventHandler
-from openai.types.beta.threads.runs.function_tool_call import FunctionToolCall
+
 import chainlit as cl
 from literalai.helper import utc_now
+from openai import AsyncAssistantEventHandler
+from openai.types.beta.threads.runs.function_tool_call import FunctionToolCall
+from typing_extensions import override
+
 from sales_data import QueryResults
 
 markdown_link_pattern = re.compile(r"\[(.*?)\]\s*\(\s*.*?\s*\)")
