@@ -150,7 +150,7 @@ def generate_sql_insert():
         product_type = random.choice(list(product_category.keys()))
         price_range = product_category[product_type]
 
-        number_of_orders = random.randint(1, 20) * growth_factor
+        number_of_orders = int(random.randint(1, 20) * growth_factor)
         revenue = random.randint(price_range[0], price_range[1]) * number_of_orders
 
         shipping_cost_percentage = random.randint(10, 20) / 100.0
