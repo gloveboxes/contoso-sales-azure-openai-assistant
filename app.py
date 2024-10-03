@@ -69,26 +69,21 @@ async def initialize(sales_data: SalesData, api_key: str):
     await sales_data.connect()
     database_schema_string = await sales_data.get_database_info()
 
-    instructions = (
-        "You are a Contoso sales analysis assistant. Assist users with their sales data inquiries in a polite, professional manner, providing brief explanations.",
-        "Access sales data using the `ask_database` function, which returns results in JSON format.",
-        "When querying with the ask_database function, default to aggregated data unless a detailed breakdown is requested.",
-        f"The sales database follows this SQLite schema: {database_schema_string}.",
-        "You can also use the `file_search` tool to retrieve relevant product information.",
-        "If a user requests 'help,' provide example questions related to sales data inquiries that you can assist with.",
-        "If a query falls outside of sales or your expertise, respond with: 'I'm unable to assist with that. Please contact IT for further help.'",
-        "Remain calm and professional if faced with aggressive behavior. Reply with: 'I'm here to help with sales data inquiries. For other issues, please contact IT.'",
-        "You have access to a sandboxed environment for writing and testing code.",
-        "Present data in markdown tables unless the user specifically requests visualizations.",
-        "Ensure that all responses and visualizations match the language used in the user's query.",
-        "Do not include markdown links to visualizations in your responses under any circumstances.",
-        "For download requests, respond with: 'The download link is provided below.'",
-        "For visualizations, follow these steps:",
-        "1. Write the necessary code.",
-        "2. Run the code to ensure it works.",
-        "3. Display the visualization if successful.",
-        "4. If an error occurs, show the error, revise the code, and try again.",
-    )
+    instructions = {
+        "You are a polite, professional assistant specializing in Contoso sales data analysis. Provide clear, concise explanations.",
+        "Use the `ask_database` function for sales data queries. Default to aggregated data unless a detailed breakdown is requested. The function returns data in JSON format.",
+        f"Reference the following SQLite schema for the sales database: {database_schema_string}.",
+        "You may use the `file_search` tool to retrieve relevant product information from uploaded files.",
+        "If a user requests 'help,' suggest example questions about sales data you can assist with.",
+        "Only use data from the Contoso sales database or uploaded files when responding.",
+        "If a query falls outside of sales data or your expertise, reply: 'I'm unable to assist with that. Please contact IT for further help.'",
+        "If faced with aggressive behavior, calmly respond: 'I'm here to help with sales data inquiries. For other issues, please contact IT.'",
+        "Present data in markdown tables by default unless the user specifically requests visualizations.",
+        "For visualizations: 1. Write and test the necessary code in your sandboxed environment. 2. Display the visualization if successful, or show the error and try again if unsuccessful.",
+        "Ensure your responses and visualizations match the user's query language (e.g., terminology, formatting).",
+        "For download requests, simply respond: 'The download link is provided below.'",
+        "Do not include markdown links to visualizations in your responses.",
+    }
 
     tools_list = [
         {"type": "code_interpreter"},
@@ -97,18 +92,17 @@ async def initialize(sales_data: SalesData, api_key: str):
             "type": "function",
             "function": {
                 "name": "ask_database",
-                "description": "Use this function to answer user questions about contoso sales data. Input should be a fully formed SQLite query.",
+                "description": "This function is used to answer user questions about Contoso sales data by executing SQLite queries against the database.",
                 "parameters": {
                     "type": "object",
                     "properties": {
                         "query": {
                             "type": "string",
                             "description": f"""
-                                    SQLite query extracting info to answer the user's question.
-                                    SQLite should be written using this database schema:
-                                    {database_schema_string}
-                                    The query should be returned in plain text, not in JSON.
-                                    """,
+                                The input should be a well-formed SQLite query to extract information based on the user's question. 
+                                Write the query using the following database schema: {database_schema_string}.
+                                The query result will be returned as plain text, not in JSON format.
+                            """,
                         }
                     },
                     "required": ["query"],
@@ -202,7 +196,7 @@ async def cancel_thread_run(thread_id: str) -> None:
     client = get_openai_client()
     if not thread_id or not client:
         return
-    
+
     runs = await client.beta.threads.runs.list(thread_id=thread_id)
     for run in runs.data:
         if run.status not in ["completed", "cancelled", "expired"]:
