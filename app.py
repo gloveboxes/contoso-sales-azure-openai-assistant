@@ -1,17 +1,17 @@
 import asyncio
 import json
 import os
-from typing import Any, Callable, Dict
-from pathlib import Path
 from contextlib import suppress
+from pathlib import Path
+from typing import Any, Callable, Dict
 
 import chainlit as cl
-from chainlit.config import config
-from chainlit.types import ThreadDict
-from openai import AsyncAzureOpenAI, AzureOpenAI
-from dotenv import load_dotenv
 import httpx
 import openai
+from chainlit.config import config
+from chainlit.types import ThreadDict
+from dotenv import load_dotenv
+from openai import AsyncAzureOpenAI, AzureOpenAI
 
 from event_handler import EventHandler
 from sales_data import SalesData
@@ -71,19 +71,18 @@ async def initialize(sales_data: SalesData, api_key: str):
 
     instructions = {
         "You are a polite, professional assistant specializing in Contoso sales data analysis. Provide clear, concise explanations.",
-        "Use the `ask_database` function for sales data queries. Default to aggregated data unless a detailed breakdown is requested. The function returns data in JSON format.",
+        "Use the `ask_database` function for sales data queries, defaulting to aggregated data unless a detailed breakdown is requested. The function returns JSON data.",
         f"Reference the following SQLite schema for the sales database: {database_schema_string}.",
-        "You may use the `file_search` tool to retrieve relevant product information from uploaded files.",
-        "Always prioritize data from the Contoso sales database over any uploaded files when responding.",
-        "If a user requests 'help,' suggest example sales data questions you can assist with (e.g., 'What was the revenue last quarter?' or 'Show me the top-selling products in Europe.').",
+        "Use the `file_search` tool to retrieve product information from uploaded files when relevant. Prioritize Contoso sales database data over files when responding.",
+        "For sales data inquiries, present results in markdown tables by default unless the user requests visualizations.",
+        "For visualizations: 1. Write and test code in your sandboxed environment. 2. Display successful visualizations or retry upon error.",
+        "If asked for 'help,' suggest example queries (e.g., 'What was last quarter's revenue?' or 'Top-selling products in Europe?').",
         "Only use data from the Contoso sales database or uploaded files when responding.",
-        "If a query falls outside of sales data or your expertise, reply: 'I'm unable to assist with that. Please contact IT for further help.'",
-        "If faced with aggressive behavior, calmly respond: 'I'm here to help with sales data inquiries. For other issues, please contact IT.'",
-        "Present data in markdown tables by default unless the user specifically requests visualizations.",
-        "For visualizations: 1. Write and test the necessary code in your sandboxed environment. 2. Display the visualization if successful, or show the error and retry if unsuccessful.",
-        "Ensure your responses and visualizations match the user's query language (e.g., terminology, formatting, labels).",
-        "For download requests, simply respond: 'The download link is provided below.'",
-        "Do not include markdown links to visualizations in your responses.",
+        "If a query is outside your expertise or unrelated to sales data, respond with: 'I'm unable to assist with that. Please contact IT for further help.'",
+        "If faced with aggressive behavior, calmly reply: 'I'm here to help with sales data inquiries. For other issues, please contact IT.'",
+        "Tailor responses to the user’s language preferences, including terminology, measurement units, currency, and formats.",
+        "For download requests, respond with: 'The download link is provided below.'",
+        "Do not include markdown links to visualizations in your responses."
     }
 
     tools_list = [
@@ -101,7 +100,6 @@ async def initialize(sales_data: SalesData, api_key: str):
                             "type": "string",
                             "description": f"""
                                 The input should be a well-formed SQLite query to extract information based on the user's question. 
-                                Write the query using the following database schema: {database_schema_string}.
                                 The query result will be returned as plain text, not in JSON format.
                             """,
                         }
@@ -149,8 +147,8 @@ async def set_starters():
             icon="/public/idea.svg",
         ),
         cl.Starter(
-            label="Create a chart of monthly revenue for winter sports products in 2022 in Europe, using vibrant colors.",
-            message="Create a chart of monthly revenue for winter sports products in 2022 in Europe, using vibrant colors.",
+            label="Create a vivid pie chart of sales by region.",
+            message="Create a vivid pie chart of sales by region.",
             icon="/public/learn.svg",
         ),
         cl.Starter(
