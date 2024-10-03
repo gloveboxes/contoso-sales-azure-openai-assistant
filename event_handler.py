@@ -38,10 +38,10 @@ class EventHandler(AsyncAssistantEventHandler):
             snapshot.value = markdown_link_pattern.sub(r"\1", snapshot.value)
             await cl.Message(content=snapshot.value).send()
         if snapshot.value and citation_pattern.search(snapshot.value):
-            await self.current_message.remove()
+            await self.current_message.stream_token(delta.value)
             snapshot.value = citation_pattern.sub(f"[{self.citations_index}]", snapshot.value)
+            await self.current_message.stream_token(f"[{self.citations_index}]")
             self.citations_index += 1
-            await cl.Message(content=snapshot.value).send()
         elif delta.value:
             await self.current_message.stream_token(delta.value)
 
