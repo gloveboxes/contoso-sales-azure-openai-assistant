@@ -1,6 +1,5 @@
-from fastapi import FastAPI
 from chainlit.utils import mount_chainlit
-
+from fastapi import FastAPI
 
 app = FastAPI()
 

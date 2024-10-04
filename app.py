@@ -19,7 +19,6 @@ from sales_data import SalesData
 load_dotenv()
 
 AZURE_OPENAI_ENDPOINT = os.environ.get("AZURE_OPENAI_ENDPOINT")
-AZURE_OPENAI_KEY = os.environ.get("AZURE_OPENAI_KEY")
 AZURE_OPENAI_API_VERSION = os.environ.get("AZURE_OPENAI_API_VERSION")
 OPENAI_ASSISTANT_ID = os.environ.get("OPENAI_ASSISTANT_ID")
 AZURE_OPENAI_DEPLOYMENT = os.getenv("AZURE_OPENAI_DEPLOYMENT")
@@ -37,6 +36,9 @@ function_map: Dict[str, Callable[[Any], str]] = {
 def get_openai_client():
     metadata = cl.user_session.get("user").metadata
     api_key = metadata.get("api_key")
+
+    if not api_key:
+        cl.Message(content="An error occurred getting API Key from session dictionary").send()
 
     return AsyncAzureOpenAI(
         azure_endpoint=AZURE_OPENAI_ENDPOINT,
@@ -65,7 +67,10 @@ async def auth_callback(username: str, password: str):
     return None
 
 
-async def initialize(sales_data: SalesData, api_key: str):
+async def initialize():
+    metadata = cl.user_session.get("user").metadata
+    api_key = metadata.get("api_key")
+
     await sales_data.connect()
     database_schema_string = await sales_data.get_database_info()
 
@@ -75,14 +80,14 @@ async def initialize(sales_data: SalesData, api_key: str):
         f"Reference the following SQLite schema for the sales database: {database_schema_string}.",
         "Use the `file_search` tool to retrieve product information from uploaded files when relevant. Prioritize Contoso sales database data over files when responding.",
         "For sales data inquiries, present results in markdown tables by default unless the user requests visualizations.",
-        "For visualizations: 1. Write and test code in your sandboxed environment. 2. Display successful visualizations or retry upon error.",
+        "For visualizations: 1. Write and test code in your sandboxed environment. 2. Use the user's language preferences for visualizations (e.g. chart labels). 3. Display successful visualizations or retry upon error.",
         "If asked for 'help,' suggest example queries (e.g., 'What was last quarter's revenue?' or 'Top-selling products in Europe?').",
         "Only use data from the Contoso sales database or uploaded files when responding.",
         "If a query is outside your expertise or unrelated to sales data, respond with: 'I'm unable to assist with that. Please contact IT for further help.'",
         "If faced with aggressive behavior, calmly reply: 'I'm here to help with sales data inquiries. For other issues, please contact IT.'",
-        "Tailor responses to the user’s language preferences, including terminology, measurement units, currency, and formats.",
+        "Tailor responses to the user's language preferences, including terminology, measurement units, currency, and formats.",
         "For download requests, respond with: 'The download link is provided below.'",
-        "Do not include markdown links to visualizations in your responses."
+        "Do not include markdown links to visualizations in your responses.",
     }
 
     tools_list = [
@@ -122,7 +127,7 @@ async def initialize(sales_data: SalesData, api_key: str):
 
         sync_openai_client.beta.assistants.update(
             assistant_id=assistant.id,
-            name="Portfolio Management Assistant",
+            name="Contoso Sales Assistant",
             model=AZURE_OPENAI_DEPLOYMENT,
             instructions=str(instructions),
             tools=tools_list,
@@ -164,31 +169,18 @@ async def set_starters():
     ]
 
 
-@cl.on_chat_start
-async def start_chat():
-    global assistant
+async def get_thread_id(async_openai_client) -> str:
+    if thread := cl.user_session.get("thread_id"):
+        return thread
+
     try:
-        metadata = cl.user_session.get("user").metadata
-        api_key = metadata.get("api_key")
-
-        if assistant is None:
-            assistant = await initialize(sales_data=sales_data, api_key=api_key)
-
-        async_openai_client = get_openai_client()
-        thread_id = cl.user_session.get("thread_id")
-        if not thread_id:
-            thread = await async_openai_client.beta.threads.create()
-            cl.user_session.set("thread_id", thread.id)
-
+        thread = await async_openai_client.beta.threads.create()
+        cl.user_session.set("thread_id", thread.id)
+        cl.Message(content="New thread created.").send()
+        return thread.id
     except Exception as e:
-        cl.user_session.set("thread_id", None)
-        await cl.Message(content=e.response.reason_phrase).send()
-        return
-
-
-@cl.on_chat_resume
-async def on_chat_resume(thread: ThreadDict):
-    await start_chat()
+        await cl.Message(content=str(e)).send()
+        return None
 
 
 async def cancel_thread_run(thread_id: str) -> None:
@@ -222,12 +214,21 @@ async def get_attachments(message: cl.Message, async_openai_client: AsyncAzureOp
 
 @cl.on_message
 async def main(message: cl.Message) -> None:
+    global assistant
     completed = False
-    thread_id = cl.user_session.get("thread_id")
-    async_openai_client = get_openai_client()
 
-    if not thread_id or not async_openai_client:
-        await cl.Message(content="An error occurred. Please try again later.").send()
+    if assistant is None:
+        assistant = await initialize()
+
+    if not assistant:
+        await cl.Message(content="An error occurred initializing the assistant.").send()
+        return
+
+    async_openai_client = get_openai_client()
+    thread_id = await get_thread_id(async_openai_client)
+
+    if not thread_id:
+        await cl.Message(content="A thread wa not successfully created.").send()
         return
 
     try:
