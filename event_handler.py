@@ -103,6 +103,7 @@ class EventHandler(AsyncAssistantEventHandler):
         image_id = image_file.file_id
         response = await self.async_openai_client.files.with_raw_response.content(image_id)
         image_element = cl.Image(name=image_id, content=response.content, display="inline", size="large")
+        await self.async_openai_client.files.delete(image_id)
         if not self.current_message.elements:
             self.current_message.elements = []
         self.current_message.elements.append(image_element)
