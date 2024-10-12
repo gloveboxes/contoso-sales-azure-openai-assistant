@@ -1,4 +1,4 @@
-# OpenAI Assistant
+# Contoso Sales Assistant Built with the Azure OpenAI Assistant API and Chainlit
 
 ## Run
 
