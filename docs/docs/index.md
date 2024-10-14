@@ -29,7 +29,7 @@ The app uses the following Azure OpenAI tools:
 
 1. **[Function Calling](https://learn.microsoft.com/azure/ai-services/openai/how-to/function-calling){:target="_blank"}**: To execute LLM generated SQL queries against the read-only SQLite database.
 2. **[Code Interpreter](https://learn.microsoft.com/azure/ai-services/openai/how-to/code-interpreter?tabs=python){:target="_blank"}**: To run Python code to create visualizations like pie charts and bar charts, and generate Excel files for users to download for deeper analysis.
-3. **[File Search](https://learn.microsoft.com/azure/ai-services/openai/how-to/file-search?tabs=python){:target="_blank"}**: To extend the assistant's knowledge with Contoso product datasheets.
+3. **[File Search](https://learn.microsoft.com/azure/ai-services/openai/how-to/file-search?tabs=python){:target="_blank"}**: To extend the assistant's knowledge with user loaded Contoso product datasheets.
 
 ### Best Practices
 
