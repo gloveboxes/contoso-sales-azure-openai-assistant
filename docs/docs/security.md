@@ -1,6 +1,6 @@
 # Security Concerns
 
-## SQL Malicious Attacks
+## Malicious SQL Attacks
 
 A common concern with the demo scenario is security, particularly the risks of SQL injection or malicious attempts to drop the database. While these concerns are valid, they can easily be mitigated by setting the database access rights. 
 
