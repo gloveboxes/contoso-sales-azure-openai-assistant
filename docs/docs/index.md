@@ -10,7 +10,7 @@ You are a sales manager at Contoso, a multinational retail company that sells ou
 
 The Contoso Sales Assistant is a conversational agent that can answer questions about sales data, generate charts, and create Excel files for further analysis.
 
-The app is built with [Azure OpenAI GPT-4o](https://learn.microsoft.com/azure/ai-services/openai/concepts/models), the [Azure OpenAI Assistants API](https://learn.microsoft.com/azure/ai-services/openai/concepts/assistants) and the [Chainlit](https://docs.chainlit.io/) Conversational AI  web framework.
+The app is built with [Azure OpenAI GPT-4o](https://learn.microsoft.com/azure/ai-services/openai/concepts/models){:target="_blank"} , the [Azure OpenAI Assistants API](https://learn.microsoft.com/azure/ai-services/openai/concepts/assistants){:target="_blank"}  and the [Chainlit](https://docs.chainlit.io/){:target="_blank"}  Conversational AI  web framework.
 
 The app uses a read-only SQLite Contoso Sales Database with 40,000 rows of synthetic data. When the app starts, it reads the sales database schema, product categories, product types, and reporting years, then adds this info to the Azure OpenAI Assistants API instruction context.
 
@@ -27,9 +27,9 @@ The Azure OpenAI Assistants API makes it easier to build Generative AI apps by s
 
 The app uses the following Azure OpenAI tools:
 
-1. **[Function Calling](https://learn.microsoft.com/azure/ai-services/openai/how-to/function-calling)**: To generate SQL queries and execute them against the read-only SQLIte database.
-2. **[Code Interpreter](https://learn.microsoft.com/azure/ai-services/openai/how-to/code-interpreter?tabs=python)**: To run Python code to create visualizations like pie charts and tables, and generate Excel files for users to download.
-3. **[File Search](https://learn.microsoft.com/azure/ai-services/openai/how-to/file-search?tabs=python)**: To extend the assistant's knowledge with Contoso product datasheets.
+1. **[Function Calling](https://learn.microsoft.com/azure/ai-services/openai/how-to/function-calling){:target="_blank"}**: To generate SQL queries and execute them against the read-only SQLIte database.
+2. **[Code Interpreter](https://learn.microsoft.com/azure/ai-services/openai/how-to/code-interpreter?tabs=python){:target="_blank"}**: To run Python code to create visualizations like pie charts and tables, and generate Excel files for users to download.
+3. **[File Search](https://learn.microsoft.com/azure/ai-services/openai/how-to/file-search?tabs=python){:target="_blank"} **: To extend the assistant's knowledge with Contoso product datasheets.
 
 ### Best Practices
 
