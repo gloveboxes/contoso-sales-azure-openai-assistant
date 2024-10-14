@@ -73,7 +73,7 @@ There are prompt starters in the centre of the chat window. You can select one o
 
 #### Create an Excel File
 
-1. Finally, let's use the Assistants API and the code interpreter to generate a report on the sales of beginner-friendly tents in Excel format.
+1. Finally, let's use the Assistants API, the LLM, and the code interpreter to generate a report on the sales of beginner-friendly tents in Excel format.
 
    Submit the prompt: **`Create an excel file`**
 
