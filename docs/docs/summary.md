@@ -1,6 +1,6 @@
 # Summary
 
-The Contoso Sales Assistant demo showcases how to use the Azure OpenAI Assistants API and Chainlit to build a conversational agent that can answer questions about sales data, generate SQL queries, execute them against a read-only database, and create visualizations and Excel files for users to download. Here are some key takeaways:
+The Contoso Sales Assistant sample showcases how to use the Azure OpenAI Assistants API and Chainlit to build a conversational agent that can answer questions about sales data, generate SQL queries, execute them against a read-only database, and create visualizations and Excel files for users to download. Here are some key takeaways:
 
 1. **Context Management**: The assistant uses the Azure OpenAI Assistants API to manage conversation context.
 2. **Data Analysis**: The assistant can answer questions about sales data, generate SQL queries, and execute them against a read-only database.

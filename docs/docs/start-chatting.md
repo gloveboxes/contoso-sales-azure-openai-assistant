@@ -38,7 +38,7 @@ There are prompt starters in the centre of the chat window. You can select one o
 1. Type **Help (in your preferred language)**. For example, **`Help in Dutch, Help in French, etc`**. This will provide a list of sample questions that the assistant can answer in the your preferred language.
 
 !!! Note
-      You can demo in the language of your choice, but be sure to test it first. Keep in mind that the Code Interpreter may not support all language fonts for visualizations.
+      You can chat to the Contoso Sales Assistant in the language of your choice, but be sure to test it first. Keep in mind that the Code Interpreter may not support all language fonts for visualizations.
 
 #### Sales by Region
 
