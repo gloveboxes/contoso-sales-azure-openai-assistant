@@ -1,6 +1,8 @@
-# Azure AI Proxy Service
+# Contoso Sales Assistant
 
-Published at [AI Proxy Docs](https://microsoft.github.io/azure-openai-service-proxy/)
+Published at [Contoso Sales Assistant Docs](https://gloveboxes.github.io/contoso-sales-azure-openai-assistant/)
+
+## MKDocs
 
 For full documentation visit [mkdocs.org](https://www.mkdocs.org).
 

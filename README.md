@@ -1,5 +1,9 @@
 # Contoso Sales Assistant Built with the Azure OpenAI Assistant API and Chainlit
 
+## Documentation
+
+See the full documentation at [Contoso Sales Assistant](https://gloveboxes.github.io/contoso-sales-azure-openai-assistant/)
+
 ## Run
 
 1. rename the `.env.example` file to `.env` and fill in the required values.
