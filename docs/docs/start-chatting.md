@@ -21,7 +21,7 @@ Suggest setting light mode as generally better for an audience.
 
 1. From the top right, select the user icon.
 1. Select Light Mode.
-1. Start with chat history closed.
+1. Start with conversation history closed.
 
 ![ux-intro](media/ux-intro.png)
 
@@ -29,13 +29,13 @@ Suggest setting light mode as generally better for an audience.
 
 #### Help
 
-There are prompt starters in the chat window. The user can select these to start the conversation.
+There are prompt starters in the centre of the chat window. You can select one of these starters to begin the conversation.
 
 1. Select **Help** from the Chat Window Starters.
 
       This will provide a list of sample questions that the assistant can answer. Remember, on startup, the assistant loaded the database schema, product categories, product types, and reporting years, so it has this context to work with when providing help.
 
-1. Type **Help (in your preferred language)**. For example, Help in Dutch, Help in French, etc. This will provide a list of sample questions that the assistant can answer in the selected language.
+1. Type **Help (in your preferred language)**. For example, Help in Dutch, Help in French, etc. This will provide a list of sample questions that the assistant can answer in the your preferred language.
 
 !!! Note
       You can demo in the language of your choice, but be sure to test it first. Keep in mind that the Code Interpreter may not support all language fonts for visualizations.
