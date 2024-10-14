@@ -8,13 +8,27 @@ You are a sales manager at Contoso, a multinational retail company that sells ou
 
 ## Solution Overview
 
-The app is built using the [Azure OpenAI Assistants API](https://learn.microsoft.com/azure/ai-services/openai/concepts/assistants) and [Chainlit](https://docs.chainlit.io/), with the backend powered by the Azure OpenAI Assistants API and app is written in Python. It demonstrates best practices for creating a conversational agent with this API. To enhance performance, the app is fully asynchronous, uses the FastAPI framework, and streams all responses to users in real-time.
+The Contoso Sales Assistant is a conversational agent that can answer questions about sales data, generate charts, and create Excel files for further analysis.
 
-The demo uses a SQLite Contoso Sales Database with 40,000 rows of synthetic data. When the app starts, it reads the schema, product categories, product types, and reporting years, then adds this info to the Azure OpenAI Assistants API instruction context.
+The app is built with [Azure OpenAI GPT-4o](https://learn.microsoft.com/azure/ai-services/openai/concepts/models), the [Azure OpenAI Assistants API](https://learn.microsoft.com/azure/ai-services/openai/concepts/assistants) and the [Chainlit](https://docs.chainlit.io/) Conversational AI  web framework.
 
-With this setup, the Azure OpenAI GPT-4 LLM and Assistants API can answer questions about Contoso’s sales data, generate SQL queries, and run them on the read-only SQLite database using function calls. The LLM and Code Interpreter can also run Python code to create visualizations, such as pie charts and tables, and generate Excel files for users to download for further analysis.
+The app uses a SQLite Contoso Sales Database with 40,000 rows of synthetic data. When the app starts, it reads the sales database schema, product categories, product types, and reporting years, then adds this info to the Azure OpenAI Assistants API instruction context.
 
-_This solution can be easily adapted to support other scenarios, such as customer support, simply by changing the database and adjusting the Azure OpenAI Assistants API instructions to fit the new use case._
+### OpenAI Tools
+
+The app uses the following Azure OpenAI tools:
+
+1. **[Function Calling](https://learn.microsoft.com/azure/ai-services/openai/how-to/function-calling)**: To generate SQL queries and execute them against the read-only SQLIte database.
+2. **[Code Interpreter](https://learn.microsoft.com/azure/ai-services/openai/how-to/code-interpreter?tabs=python)**: To run Python code to create visualizations like pie charts and tables, and generate Excel files for users to download.
+3. **[File Search](https://learn.microsoft.com/azure/ai-services/openai/how-to/file-search?tabs=python)**: To extend the assistant's knowledge with Contoso product datasheets.
+
+### Best Practices
+
+The app demonstrates best practices for creating a conversational agent with the Azure OpenAI Assistants API. The app is fully asynchronous, uses the FastAPI framework, and streams all responses to users in real-time.
+
+### Extending
+
+This solution can be easily adapted to support other scenarios, such as customer support, simply by changing the database and adjusting the Azure OpenAI Assistants API instructions to fit the new use case.
 
 ## The Contoso Sales Assistant Source Code
 
