@@ -19,9 +19,9 @@
 
 Suggest setting light mode as generally better for an audience.
 
-1. From the top right, select user icon
-1. Select Light Mode
-1. Start with chat history closed
+1. From the top right, select the user icon.
+1. Select Light Mode.
+1. Start with chat history closed.
 
 ![ux-intro](media/ux-intro.png)
 
