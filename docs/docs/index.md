@@ -41,4 +41,4 @@ This solution can be easily adapted to support other scenarios, such as customer
 
 ## The Contoso Sales Assistant Source Code
 
-The demo source code is available in the [Contoso Sales Assistant built with the Azure OpenAI Assistant API and Chainlit](https://github.com/gloveboxes/contoso-sales-azure-openai-assistant) repository.
+The source code is available in the [Contoso Sales Assistant built with the Azure OpenAI Assistant API and Chainlit](https://github.com/gloveboxes/contoso-sales-azure-openai-assistant) repository.
