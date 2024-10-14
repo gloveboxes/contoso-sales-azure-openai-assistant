@@ -4,7 +4,7 @@
 
 See the full documentation at [Contoso Sales Assistant](https://gloveboxes.github.io/contoso-sales-azure-openai-assistant/)
 
-## Run
+<!-- ## Run
 
 1. rename the `.env.example` file to `.env` and fill in the required values.
 2. Select <kbd>F5</kbd> to start the bot in debugger mode.
@@ -15,7 +15,7 @@ See the full documentation at [Contoso Sales Assistant](https://gloveboxes.githu
 > [!NOTE]
 > Literal AI is an all in one observability, evaluation and analytics platform for building LLM apps.
 
-Go to [Literal AI](https://cloud.getliteral.ai/), create a project and go to Settings to get your API key.
+Go to [Literal AI](https://cloud.getliteral.ai/), create a project and go to Settings to get your API key. -->
 
 ## Deploying on Azure
 
