@@ -2,10 +2,11 @@ site_name: Contoso Sales AI Assistant
 
 nav:
   - Introduction: index.md
+  - Security: security.md
   - Resources: resources.md
   - Get started: get-started.md
   - Summary: summary.md
-  - Security: security.md
+
 
 
 plugins:
