@@ -12,7 +12,7 @@
 ## The Demo Script
 
 1. From your browser, navigate to the [Contoso Sales Assistant](https://aka.ms/contoso-sales-assistant){:target="_blank"} website.
-2. Login with your GitHub account to get a demo key.
+2. Login with your GitHub account.
 3. Follow the instructions for the event, copy your API Key and navigate API Assistant demo.
 
 ### Set the Assistant UX to Light Mode
