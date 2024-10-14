@@ -25,38 +25,49 @@ Suggest setting light mode as generally better for an audience.
 
 ### Start the conversation
 
+#### Help
+
 There are prompt starters in the chat window. The user can select these to start the conversation.
 
-1. Select **Help**.
+1. Select **Help** from the Chat Window Starters.
 
       This will provide a list of sample questions that the assistant can answer. Remember, on startup, the assistant loaded the database schema, product categories, product types, and reporting years, so it has this context to work with when providing help.
 
 1. Type **Help (in your preferred language)**. For example, Help in Dutch, Help in French, etc. This will provide a list of sample questions that the assistant can answer in the selected language.
-1. You can demo in your preferred language but be sure to test the language support first.
+
+!!! Note
+      You can demo in the language of your choice, but be sure to test it first. Keep in mind that the Code Interpreter may not support all language fonts for visualizations.
+
+#### Sales by Region
+
 1. Select **Start new chart**.
-1. Select the 2nd from left starter.
+1. Select the 2nd from left starter: **Create a vivid pie chart of sales by region.**
 
-      **Create a vivid pie chart of sales by region.**
-
-      The LLM will generate a SQL query, next the LLM will call the **ask_database** function to execute the query and return the results. The LLM will then generate the Python code to create the pie chart. You can expand the "Chain of Thought" to see the SQL query and the results, and the Python code to create the pie chart executed by the Code Interpreter.
+      The LLM will first generate a SQL query. It will then call the ask_database function to execute the query and return the results. After that, the LLM will generate Python code to create a pie chart based on the query results. You can view the “Chain of Thought” to see the SQL query, the results, and the Python code executed by the Code Interpreter to create the pie chart.
 
       ![cot](media/cot.png)
 
+#### Tents for Beginners
+
 1. Next, we'll ask about beginner-friendly tents. The sales database has limited knowledge of the products as the focus of the database is sales data, so the LLM will generate a **limited** response based on the data available.
 
-   **What beginner-friendly tents does Contoso sell?**
+      **What beginner-friendly tents does Contoso sell?**
+
+#### Extend the Assistant's Knowledge
 
 1. Next, we'll going to upload a Contoso Tents Datasheet to the Assistants API. This will allow the assistant to provide more detailed information about the tents. The Assistants API will vectorize the PDF and store the data in a vector store and the LLM will be able to access the data using hybrid (semantic and keyword) queries.
 
-   1. Drag and drop the **contoso-tents-datasheet.pdf** onto the Contoso Sales Assistant. The assistant will now have access to the tent data. The pdf is in the **datasheet** folder for **demo-1** of this repository.
+   1. Drag and drop the **contoso-tents-datasheet.pdf** onto the Contoso Sales Assistant. The assistant will now have access to the tent data. The pdf is in the **resources** folder of this repository.
    2. Add the prompt **What beginner-friendly tents does Contoso sell?**
    3. Add resubmit the question.
 
    Now the assistant has access to the tent data and can provide more detailed information.
 
-1. Now, we're going to combine the data from the sales database and the tent datasheet to provide a more detailed analysis.
+2. Now, we're going to combine the data from the sales database and the tent datasheet to provide a more detailed analysis. Submit the following prompt:
 
-   Submit the following prompt: **Show sales of tents by region and include a brief description in the table about each tent.**
+      **Show sales of tents by region and include a brief description in the table about each tent.**
+
+#### Create an Excel File
 
 1. Finally, let's use the Assistants API and the code interpreter to generate a report on the sales of beginner-friendly tents in Excel format.
 
@@ -64,7 +75,7 @@ There are prompt starters in the chat window. The user can select these to start
 
    The LLM will generate the Python code to create the Excel file. You can download the file by selecting the download link and open in Excel.
 
-![chat-window](media/chat-window.png)
+<!-- ![chat-window](media/chat-window.png) -->
 
 ## Other questions to ask
 
