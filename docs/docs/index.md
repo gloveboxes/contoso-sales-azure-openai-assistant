@@ -36,6 +36,8 @@ The demo source code is available in the [Contoso Sales Assistant built with the
 
 ### Security Concerns
 
-A common concern with the demo scenario is security, particularly the risks of SQL injection or malicious attempts to drop the database. While these concerns are valid, they can easily be mitigated by setting the database access rights. For SQLite, this involves configuring the database as read-only. For a Database Service such as Postgres or Azure SQL, you would assign the application a read-only (Select) role. Additionally, running the application in a secure environment provides an extra layer of protection.
+A common concern with the demo scenario is security, particularly the risks of SQL injection or malicious attempts to drop the database. While these concerns are valid, they can easily be mitigated by setting the database access rights. 
+
+For SQLite, this involves configuring the database as read-only. For a Database Service such as Postgres or Azure SQL, you would assign the application a read-only (Select) role. Additionally, running the application in a secure environment provides an extra layer of protection.
 
 In enterprise scenarios, data is extracted and transformed from transactional systems into a read-only database or data warehouse with a user friendly schema. This approach ensures the data is secure, optimized for performance, and that the application has read-only access to the data.
