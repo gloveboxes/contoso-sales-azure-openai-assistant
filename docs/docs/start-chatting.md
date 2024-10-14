@@ -1,6 +1,6 @@
 # Start chatting with the Contoso Sales Assistant
 
-## Introduction to the Contoso Sales Assistant
+## Introduction
 
 1. Below is the script used in the video, but since the application is powered by a large language model (LLM), conversations will vary. **Be prepared to adapt based on the responses you receive.**
 
