@@ -69,7 +69,7 @@ There are prompt starters in the centre of the chat window. You can select one o
 
 2. Now, we're going to combine the data from the sales database and the tent datasheet to provide a more detailed analysis. Submit the following prompt:
 
-      **Show sales of tents by region and include a brief description in the table about each tent.**
+      **Show sales of BACKPACKING TENTS by region and include a brief description in the table about each tent.**
 
 #### Create an Excel File
 
