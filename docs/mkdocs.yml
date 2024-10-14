@@ -2,6 +2,8 @@ site_name: Contoso Sales AI Assistant
 
 nav:
   - Introduction: index.md
+  - Get started: get-started.md
+  - Summary: summary.md
   - FAQ: faq.md
 
 
