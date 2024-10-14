@@ -12,7 +12,16 @@ The Contoso Sales Assistant is a conversational agent that can answer questions 
 
 The app is built with [Azure OpenAI GPT-4o](https://learn.microsoft.com/azure/ai-services/openai/concepts/models), the [Azure OpenAI Assistants API](https://learn.microsoft.com/azure/ai-services/openai/concepts/assistants) and the [Chainlit](https://docs.chainlit.io/) Conversational AI  web framework.
 
-The app uses a SQLite Contoso Sales Database with 40,000 rows of synthetic data. When the app starts, it reads the sales database schema, product categories, product types, and reporting years, then adds this info to the Azure OpenAI Assistants API instruction context.
+The app uses a read-only SQLite Contoso Sales Database with 40,000 rows of synthetic data. When the app starts, it reads the sales database schema, product categories, product types, and reporting years, then adds this info to the Azure OpenAI Assistants API instruction context.
+
+## Why use the Azure OpenAI Assistants API?
+
+The Azure OpenAI Assistants API makes it easier to build Generative AI apps by simplifying key tasks:
+
+1. Streamlined Development: It abstracts the complexities of integrating AI, allowing developers to focus on building features rather than managing the AI model.
+2. Context Management: The API automatically handles conversation context, ensuring the AI provides relevant, coherent responses throughout interactions.
+3. Scalability: It scales effortlessly, managing workloads and resources automatically to handle both small and large user bases.
+4. Context Execution: The API lets you define and run context against an LLM, making it easier to perform tasks like data queries or code generation based on specific instructions.
 
 ### OpenAI Tools
 
