@@ -5,7 +5,7 @@ nav:
   - Resources: resources.md
   - Get started: get-started.md
   - Summary: summary.md
-  - FAQ: faq.md
+  - Security: security.md
 
 
 plugins:
