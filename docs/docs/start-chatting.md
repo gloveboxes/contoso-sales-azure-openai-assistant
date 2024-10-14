@@ -1,5 +1,7 @@
 # Start chatting with the Contoso Sales Assistant
 
+## Introduction to the Contoso Sales Assistant
+
 1. Below is the script used in the video, but since the application is powered by a large language model (LLM), conversations will vary. **Be prepared to adapt based on the responses you receive.**
 
       The script is a guide rather than a strict rule. **However, be aware that some prompts may produce large amounts of data, which can be tedious for the audience as it streams to the assistant.** To maintain engagement it's best to use prompts that generate concise responses. The assistant instructions favour data aggregates to reduce data returned from the database.
@@ -77,7 +79,9 @@ There are prompt starters in the chat window. The user can select these to start
 
 <!-- ![chat-window](media/chat-window.png) -->
 
-## Other questions to ask
+## Other questions you can ask
+
+The assistant can answer a wide range of questions about the sales data. Here are some additional questions you can ask:
 
 1. **What are the top 5 products by sales?**
 2. **Sales by region?**
