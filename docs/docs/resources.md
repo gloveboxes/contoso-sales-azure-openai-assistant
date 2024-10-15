@@ -8,4 +8,4 @@ Start by watching the 5-minute demo on YouTube. This will provide you with a cle
 
 ## The Contoso Tents Datasheet
 
-The **contoso-tents-datasheet.pdf** file used in the sample can be found in the **resources** folder of this repository.
+The **contoso-tents-datasheet.pdf** file used in the sample can be found in the [resources](https://github.com/gloveboxes/contoso-sales-azure-openai-assistant/tree/main/resources) folder of this repository.
