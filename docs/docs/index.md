@@ -18,10 +18,12 @@ The app uses a read-only SQLite Contoso Sales Database with 40,000 rows of synth
 
 The Azure OpenAI Assistants API makes it easier to build Generative AI apps by simplifying key tasks:
 
-1. Streamlined Development: It abstracts the complexities of integrating AI, allowing developers to focus on building features rather than managing the AI model.
-2. Context Management: The API automatically handles conversation context, ensuring the AI provides relevant, coherent responses throughout interactions.
-3. Scalability: It scales effortlessly, managing workloads and resources automatically to handle both small and large user bases.
-4. Context Execution: The API lets you define and run context against an LLM, making it easier to perform tasks like data queries or code generation based on specific instructions.
+1. **Statefulness**: Manages state on behalf of your AI app.
+2. **Reduced development effort**: Abstracts the complexities of integrating AI allowing developers to focus on building features rather than managing the AI model interaction.
+3. **Context Management**: The API automatically handles conversation context, ensuring the AI provides relevant, coherent responses throughout interactions.
+4. **Powerful native tools and 3rd Party extensibility**: Enable developer access to powerful in-built tools in parallel such as code interpreter and knowledge retrieval and external extensions through function calling.
+5. **Scalability**: It scales effortlessly, managing workloads and resources automatically to handle both small and large user bases.
+6. **Context Execution**: The API lets you define and run context against an LLM, making it easier to perform tasks like data queries or code generation based on specific instructions.
 
 ## Assistants components
 
