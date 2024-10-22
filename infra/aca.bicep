@@ -10,6 +10,9 @@ param exists bool
 param openAiDeploymentName string
 param openAiEndpoint string
 param allowedOrigins string = '' // comma separated list of allowed origins - no slash at the end!
+@secure()
+param chainlitAuthSecret string
+param azureOpenAiApiVersion string = '2024-05-01-preview'
 
 resource acaIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
   name: identityName
@@ -27,26 +30,48 @@ module app 'core/host/container-app-upsert.bicep' = {
     exists: exists
     containerAppsEnvironmentName: containerAppsEnvironmentName
     containerRegistryName: containerRegistryName
-    env: [
+    secrets:[
       {
-        name: 'AZURE_OPENAI_CHATGPT_DEPLOYMENT'
+        name: 'azure-openai-deployment'
         value: openAiDeploymentName
       }
       {
-        name: 'AZURE_OPENAI_ENDPOINT'
+        name: 'azure-openai-endpoint'
         value: openAiEndpoint
       }
       {
-        name: 'RUNNING_IN_PRODUCTION'
-        value: 'true'
+        name: 'chainlit-auth-secret'
+        value: chainlitAuthSecret
+      }
+    ]
+    env: [
+      {
+        name: 'AZURE_OPENAI_DEPLOYMENT'
+        secretRef: 'azure-openai-deployment'
       }
       {
-        name: 'AZURE_OPENAI_CLIENT_ID'
-        value: acaIdentity.properties.clientId
+        name: 'AZURE_OPENAI_ENDPOINT'
+        secretRef: 'azure-openai-endpoint'
       }
+      {
+        name: 'CHAINLIT_AUTH_SECRET'
+        secretRef: 'chainlit-auth-secret'
+      }
+      {
+        name: 'ENV'
+        value: 'production'
+      }
+      // {
+      //   name: 'AZURE_OPENAI_CLIENT_ID'
+      //   value: acaIdentity.properties.clientId
+      // }
       {
         name: 'ALLOWED_ORIGINS'
         value: allowedOrigins
+      }
+      {
+        name: 'AZURE_OPENAI_API_VERSION'
+        value: azureOpenAiApiVersion
       }
     ]
     targetPort: 3100

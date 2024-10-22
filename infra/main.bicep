@@ -30,6 +30,10 @@ param openAiResourceGroupName string = ''
 param openAiResourceLocation string
 param openAiSkuName string = ''
 param openAiDeploymentCapacity int = 30
+@secure()
+param chainlitAuthSecret string
+param azureAiProxyEndpoint string
+param azureOpenAiApiVersion string = '2024-05-01-preview'
 
 @description('Whether the deployment is running on GitHub Actions')
 param runningOnGh string = ''
@@ -49,7 +53,7 @@ resource openAiResourceGroup 'Microsoft.Resources/resourceGroups@2021-04-01' exi
 
 var prefix = '${name}-${resourceToken}'
 
-var openAiDeploymentName = 'chatgpt'
+var openAiDeploymentName = 'gpt-4o'
 module openAi 'core/ai/cognitiveservices.bicep' = {
   name: 'openai'
   scope: openAiResourceGroup
@@ -65,8 +69,7 @@ module openAi 'core/ai/cognitiveservices.bicep' = {
         name: openAiDeploymentName
         model: {
           format: 'OpenAI'
-          name: 'gpt-35-turbo'
-          version: '0613'
+          name: 'gpt-4o'
         }
         sku: {
           name: 'Standard'
@@ -113,9 +116,12 @@ module aca 'aca.bicep' = {
     containerAppsEnvironmentName: containerApps.outputs.environmentName
     containerRegistryName: containerApps.outputs.registryName
     openAiDeploymentName: openAiDeploymentName
-    openAiEndpoint: openAi.outputs.endpoint
+    // openAiEndpoint: openAi.outputs.endpoint
+    openAiEndpoint: azureAiProxyEndpoint
     allowedOrigins: allowedOrigins
     exists: acaExists
+    chainlitAuthSecret: chainlitAuthSecret
+    azureOpenAiApiVersion: azureOpenAiApiVersion
   }
 }
 
