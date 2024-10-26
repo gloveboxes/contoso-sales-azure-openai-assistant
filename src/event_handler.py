@@ -1,4 +1,5 @@
 import json
+import logging
 import re
 
 import chainlit as cl
@@ -8,6 +9,9 @@ from openai.types.beta.threads.runs.function_tool_call import FunctionToolCall
 from typing_extensions import override
 
 from sales_data import QueryResults
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 markdown_link_pattern = re.compile(r"\[(.*?)\]\s*\(\s*.*?\s*\)")
 citation_pattern = re.compile(r"【.*?】")
@@ -101,9 +105,13 @@ class EventHandler(AsyncAssistantEventHandler):
 
     async def on_image_file_done(self, image_file):
         image_id = image_file.file_id
+        logger.info(f"Image file id: {image_id}")
         response = await self.async_openai_client.files.with_raw_response.content(image_id)
+        logger.info(f"Image file response: {response}")
+        logger.info(f"Image file response length: {len(response.content)} bytes")
+        # logger.info(f"Image file response: {response.text}")
         image_element = cl.Image(name=image_id, content=response.content, display="inline", size="large")
-        await self.async_openai_client.files.delete(image_id)
+        # await self.async_openai_client.files.delete(image_id)
         if not self.current_message.elements:
             self.current_message.elements = []
         self.current_message.elements.append(image_element)

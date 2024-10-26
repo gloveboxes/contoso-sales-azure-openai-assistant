@@ -39,7 +39,7 @@
         "value": "${CHAINLIT_AUTH_SECRET}"
       },
       "azureAiProxyEndpoint": {
-        "value": "${Azure_AI_PROXY_ENDPOINT}"
+        "value": "${AZURE_AI_PROXY_ENDPOINT}"
       }
     }
   }

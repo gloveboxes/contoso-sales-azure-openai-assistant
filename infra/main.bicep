@@ -21,7 +21,18 @@ param allowedOrigins string = ''
 param openAiResourceName string = ''
 param openAiResourceGroupName string = ''
 @description('Location for the OpenAI resource group')
-@allowed([ 'canadaeast', 'eastus', 'eastus2', 'francecentral', 'switzerlandnorth', 'uksouth', 'japaneast', 'northcentralus', 'australiaeast', 'swedencentral' ])
+@allowed([
+  'canadaeast'
+  'eastus'
+  'eastus2'
+  'francecentral'
+  'switzerlandnorth'
+  'uksouth'
+  'japaneast'
+  'northcentralus'
+  'australiaeast'
+  'swedencentral'
+])
 @metadata({
   azd: {
     type: 'location'
@@ -32,8 +43,8 @@ param openAiSkuName string = ''
 param openAiDeploymentCapacity int = 30
 @secure()
 param chainlitAuthSecret string
-param azureAiProxyEndpoint string
 param azureOpenAiApiVersion string = '2024-05-01-preview'
+param azureAiProxyEndpoint string
 
 @description('Whether the deployment is running on GitHub Actions')
 param runningOnGh string = ''
@@ -80,6 +91,17 @@ module openAi 'core/ai/cognitiveservices.bicep' = {
   }
 }
 
+module deploymentScriptModule 'script.bicep' = {
+  name: 'deploymentAssistantScript'
+  scope: resourceGroup
+  params: {
+    openAiEndpoint: openAi.outputs.endpoint
+    openAiResourceLocation: location
+    openAiApiKey: openAi.outputs.key
+    openAiModel: openAiDeploymentName
+  }
+}
+
 module logAnalyticsWorkspace 'core/monitor/loganalytics.bicep' = {
   name: 'loganalytics'
   scope: resourceGroup
@@ -115,16 +137,17 @@ module aca 'aca.bicep' = {
     identityName: '${prefix}-id-aca'
     containerAppsEnvironmentName: containerApps.outputs.environmentName
     containerRegistryName: containerApps.outputs.registryName
-    openAiDeploymentName: openAiDeploymentName
-    // openAiEndpoint: openAi.outputs.endpoint
-    openAiEndpoint: azureAiProxyEndpoint
+    assistantId: deploymentScriptModule.outputs.assistantId
     allowedOrigins: allowedOrigins
     exists: acaExists
     chainlitAuthSecret: chainlitAuthSecret
+    openAiEndpoint: openAi.outputs.endpoint
+    openAiApiKey: openAi.outputs.key
     azureOpenAiApiVersion: azureOpenAiApiVersion
+    openAiDeploymentName: openAiDeploymentName
+    azureAiProxyEndpoint:azureAiProxyEndpoint
   }
 }
-
 
 module openAiRoleUser 'core/security/role.bicep' = if (createRoleForUser && empty(runningOnGh)) {
   scope: openAiResourceGroup
@@ -135,7 +158,6 @@ module openAiRoleUser 'core/security/role.bicep' = if (createRoleForUser && empt
     principalType: 'User'
   }
 }
-
 
 module openAiRoleBackend 'core/security/role.bicep' = {
   scope: openAiResourceGroup

@@ -23,9 +23,19 @@ logger = logging.getLogger(__name__)
 load_dotenv("env/.env", override=True)
 
 AZURE_OPENAI_ENDPOINT = os.environ.get("AZURE_OPENAI_ENDPOINT")
+AZURE_OPENAI_API_KEY = os.environ.get("AZURE_OPENAI_API_KEY")
 AZURE_OPENAI_API_VERSION = os.environ.get("AZURE_OPENAI_API_VERSION")
-OPENAI_ASSISTANT_ID = os.environ.get("OPENAI_ASSISTANT_ID")
+AZURE_OPENAI_ASSISTANT_ID = os.environ.get("AZURE_OPENAI_ASSISTANT_ID")
 AZURE_OPENAI_DEPLOYMENT = os.getenv("AZURE_OPENAI_DEPLOYMENT")
+AZURE_AI_PROXY_ENDPOINT = os.getenv("AZURE_AI_PROXY_ENDPOINT")
+
+
+print(f"The Azure OpenAI endpoint is: {AZURE_OPENAI_ENDPOINT}")
+print(f"The Azure OpenAI API Key is: {AZURE_OPENAI_API_KEY}")
+print(f"The Azure OpenAI API Version is: {AZURE_OPENAI_API_VERSION}")
+print(f"The Assistant ID is: {AZURE_OPENAI_ASSISTANT_ID}")
+print(f"The Deployment is: {AZURE_OPENAI_DEPLOYMENT}")
+
 
 assistant = None
 sales_data = SalesData()
@@ -37,22 +47,22 @@ function_map: Dict[str, Callable[[Any], str]] = {
 
 
 def get_openai_client():
-    metadata = cl.user_session.get("user").metadata
-    api_key = metadata.get("api_key")
-
-    if not api_key:
-        cl.Message(content="An error occurred getting API Key from session dictionary").send()
-        logger.error("API Key not found in session dictionary.")
+    print()
+    print(f"The Azure OpenAI endpoint is: {AZURE_OPENAI_ENDPOINT}")
+    print(f"The Azure OpenAI API Key is: {AZURE_OPENAI_API_KEY}")
+    print(f"The Azure OpenAI API Version is: {AZURE_OPENAI_API_VERSION}")
+    print(f"The Assistant ID is: {AZURE_OPENAI_ASSISTANT_ID}")
+    print(f"The Deployment is: {AZURE_OPENAI_DEPLOYMENT}")
 
     return AsyncAzureOpenAI(
         azure_endpoint=AZURE_OPENAI_ENDPOINT,
-        api_key=api_key,
+        api_key=AZURE_OPENAI_API_KEY,
         api_version=AZURE_OPENAI_API_VERSION,
     )
 
 
 async def authenticate_api_key(api_key: str):
-    url = f"{AZURE_OPENAI_ENDPOINT}/eventinfo"
+    url = f"{AZURE_AI_PROXY_ENDPOINT}/eventinfo"
     headers = {"api-key": api_key}
     async with httpx.AsyncClient() as client:
         response = await client.post(url, headers=headers)
@@ -63,34 +73,21 @@ async def authenticate_api_key(api_key: str):
 
 @cl.password_auth_callback
 async def auth_callback(username: str, password: str):
-    event_response = await authenticate_api_key(password)
-    if event_response:
-        event_settings = json.loads(event_response)
-        event_settings.update({"api_key": password})
-        return cl.User(identifier=username, metadata=event_settings)
+    # Fetch the user matching username from your database
+    # and compare the hashed password with the value stored in the database
+    if (username, password) == ("admin", "admin"):
+        return cl.User(identifier="admin", metadata={"role": "admin", "provider": "credentials"})
     return None
 
-
-def get_assistant_config() -> tuple:
-    metadata = cl.user_session.get("user").metadata
-    api_key = metadata.get("api_key")
-    if not api_key:
-        cl.Message(content="An error occurred getting API Key from session dictionary").send()
-        logger.error("API Key not found in session dictionary.")
-        return None
-
-    assistant_id_list = metadata.get("capabilities", {}).get("openai-assistant", [])
-    if len(assistant_id_list) == 1:
-        return api_key, assistant_id_list[0]
-
-    cl.Message(content="An error occurred getting assistant ID from session dictionary").send()
-    logger.error("Assistant ID not found in session dictionary.")
-    return None
+    # event_response = await authenticate_api_key(password)
+    # if event_response:
+    #     event_settings = json.loads(event_response)
+    #     event_settings.update({"api_key": password})
+    #     return cl.User(identifier=username, metadata=event_settings)
+    # return None
 
 
 async def initialize():
-    api_key, assistant_id = get_assistant_config()
-
     await sales_data.connect()
     database_schema_string = await sales_data.get_database_info()
 
@@ -136,13 +133,26 @@ async def initialize():
     ]
 
     try:
+        print(f"The Azure OpenAI endpoint is: {AZURE_OPENAI_ENDPOINT}")
+        print(f"The Azure OpenAI API Key is: {AZURE_OPENAI_API_KEY}")
+        print(f"The Azure OpenAI API Version is: {AZURE_OPENAI_API_VERSION}")
+        print(f"The Assistant ID is: {AZURE_OPENAI_ASSISTANT_ID}")
+        print(f"The Deployment is: {AZURE_OPENAI_DEPLOYMENT}")
+
+        logger.info(f"The Azure OpenAI endpoint is: {AZURE_OPENAI_ENDPOINT}")
+        logger.info(f"The Azure OpenAI API Key is: {AZURE_OPENAI_API_KEY}")
+        logger.info(f"The Azure OpenAI API Version is: {AZURE_OPENAI_API_VERSION}")
+        logger.info(f"The Assistant ID is: {AZURE_OPENAI_ASSISTANT_ID}")
+        logger.info(f"The Deployment is: {AZURE_OPENAI_DEPLOYMENT}")
+
+
         sync_openai_client = AzureOpenAI(
             azure_endpoint=AZURE_OPENAI_ENDPOINT,
-            api_key=api_key,
+            api_key=AZURE_OPENAI_API_KEY,
             api_version=AZURE_OPENAI_API_VERSION,
         )
 
-        assistant = sync_openai_client.beta.assistants.retrieve(assistant_id=assistant_id)
+        assistant = sync_openai_client.beta.assistants.retrieve(assistant_id=AZURE_OPENAI_ASSISTANT_ID)
 
         sync_openai_client.beta.assistants.update(
             assistant_id=assistant.id,
@@ -197,7 +207,7 @@ async def get_thread_id(async_openai_client) -> str:
     try:
         thread = await async_openai_client.beta.threads.create()
         cl.user_session.set("thread_id", thread.id)
-        cl.Message(content="New thread created.").send()
+        # await cl.Message(content="New thread created.").send()
         return thread.id
     except Exception as e:
         await cl.Message(content=str(e)).send()

@@ -47,8 +47,8 @@
                 "authLogin": {
                     "title": "Login to access the app.",
                     "form": {
-                        "email": "Email address",
-                        "password": "Password",
+                        "email": "Event name",
+                        "password": "API Key or Event Shared Code",
                         "noAccount": "Don't have an account?",
                         "alreadyHaveAccount": "Already have an account?",
                         "signup": "Sign Up",
@@ -57,8 +57,8 @@
                         "continue": "Continue",
                         "forgotPassword": "Forgot password?",
                         "passwordMustContain": "Your password must contain:",
-                        "emailRequired": "email is a required field",
-                        "passwordRequired": "password is a required field"
+                        "emailRequired": "Nick name is a required field",
+                        "passwordRequired": "The API Key is a required field"
                     },
                     "error": {
                         "default": "Unable to sign in.",
