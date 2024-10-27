@@ -18,11 +18,8 @@ class SalesData:
         self.conn = None
 
     async def connect(self: "SalesData") -> None:
-        env = os.getenv('ENV', 'development')
-        if env == 'development':
-            db_uri = f"file:src/{DATA_BASE}?mode=ro"
-        elif env == 'production':
-            db_uri = f"file:{DATA_BASE}?mode=ro"
+        env = os.getenv("ENV", "development")
+        db_uri = f"file:{'src/' if env == 'development' else ''}{DATA_BASE}?mode=ro"
 
         try:
             self.conn = await aiosqlite.connect(db_uri, uri=True)
@@ -31,7 +28,7 @@ class SalesData:
             print(f"An error occurred: {e}")
             self.conn = None
 
-    async def close(self:"SalesData")-> None:
+    async def close(self: "SalesData") -> None:
         if self.conn:
             await self.conn.close()
             print("Database connection closed.")
