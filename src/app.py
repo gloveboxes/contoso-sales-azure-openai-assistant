@@ -1,5 +1,4 @@
 import asyncio
-import json
 import logging
 import os
 from contextlib import suppress
@@ -7,10 +6,8 @@ from pathlib import Path
 from typing import Any, Callable, Dict
 
 import chainlit as cl
-import httpx
 import openai
 from chainlit.config import config
-from chainlit.types import ThreadDict
 from dotenv import load_dotenv
 from openai import AsyncAzureOpenAI, AzureOpenAI
 
@@ -23,73 +20,54 @@ logger = logging.getLogger(__name__)
 load_dotenv("env/.env", override=True)
 
 AZURE_OPENAI_ENDPOINT = os.environ.get("AZURE_OPENAI_ENDPOINT")
+AZURE_OPENAI_API_KEY = os.environ.get("AZURE_OPENAI_API_KEY")
 AZURE_OPENAI_API_VERSION = os.environ.get("AZURE_OPENAI_API_VERSION")
-OPENAI_ASSISTANT_ID = os.environ.get("OPENAI_ASSISTANT_ID")
+AZURE_OPENAI_ASSISTANT_ID = os.environ.get("AZURE_OPENAI_ASSISTANT_ID")
 AZURE_OPENAI_DEPLOYMENT = os.getenv("AZURE_OPENAI_DEPLOYMENT")
+ASSISTANT_PASSWORD = os.getenv("ASSISTANT_PASSWORD")
 
-assistant = None
 sales_data = SalesData()
 cl.instrument_openai()
+ASSISTANT_READY = False
+
+sync_openai_client = AzureOpenAI(
+    azure_endpoint=AZURE_OPENAI_ENDPOINT,
+    api_key=AZURE_OPENAI_API_KEY,
+    api_version=AZURE_OPENAI_API_VERSION,
+)
+
+assistant = sync_openai_client.beta.assistants.retrieve(assistant_id=AZURE_OPENAI_ASSISTANT_ID)
 
 function_map: Dict[str, Callable[[Any], str]] = {
     "ask_database": lambda args: sales_data.ask_database(query=args.get("query")),
 }
 
 
-def get_openai_client():
-    metadata = cl.user_session.get("user").metadata
-    api_key = metadata.get("api_key")
-
-    if not api_key:
-        cl.Message(content="An error occurred getting API Key from session dictionary").send()
-        logger.error("API Key not found in session dictionary.")
-
+def get_openai_client() -> AsyncAzureOpenAI:
+    """Get an instance of the OpenAI"""
     return AsyncAzureOpenAI(
         azure_endpoint=AZURE_OPENAI_ENDPOINT,
-        api_key=api_key,
+        api_key=AZURE_OPENAI_API_KEY,
         api_version=AZURE_OPENAI_API_VERSION,
     )
 
 
-async def authenticate_api_key(api_key: str):
-    url = f"{AZURE_OPENAI_ENDPOINT}/eventinfo"
-    headers = {"api-key": api_key}
-    async with httpx.AsyncClient() as client:
-        response = await client.post(url, headers=headers)
-    if response.status_code == 200:
-        return response.text
-    return None
-
-
 @cl.password_auth_callback
-async def auth_callback(username: str, password: str):
-    event_response = await authenticate_api_key(password)
-    if event_response:
-        event_settings = json.loads(event_response)
-        event_settings.update({"api_key": password})
-        return cl.User(identifier=username, metadata=event_settings)
+async def auth_callback(username: str, password: str) -> cl.User | None:
+    """Authenticate the user"""
+    # Normally, you would check the username and password against a database.
+    # Or use OAuth or custom provider for authentication. 
+    # See Chainlit documentation https://docs.chainlit.io/authentication/overview
+    if (username, password) == ("sales@contoso.com", ASSISTANT_PASSWORD):
+        return cl.User(identifier="sales@contoso.com", metadata={"role": "sales", "provider": "credentials"})
     return None
 
 
-def get_assistant_config() -> tuple:
-    metadata = cl.user_session.get("user").metadata
-    api_key = metadata.get("api_key")
-    if not api_key:
-        cl.Message(content="An error occurred getting API Key from session dictionary").send()
-        logger.error("API Key not found in session dictionary.")
-        return None
-
-    assistant_id_list = metadata.get("capabilities", {}).get("openai-assistant", [])
-    if len(assistant_id_list) == 1:
-        return api_key, assistant_id_list[0]
-
-    cl.Message(content="An error occurred getting assistant ID from session dictionary").send()
-    logger.error("Assistant ID not found in session dictionary.")
-    return None
-
-
-async def initialize():
-    api_key, assistant_id = get_assistant_config()
+async def initialize() -> None:
+    """Initialize the assistant with the sales data schema and instructions."""
+    global ASSISTANT_READY
+    if ASSISTANT_READY:
+        return
 
     await sales_data.connect()
     database_schema_string = await sales_data.get_database_info()
@@ -123,7 +101,7 @@ async def initialize():
                         "query": {
                             "type": "string",
                             "description": f"""
-                                The input should be a well-formed SQLite query to extract information based on the user's question. 
+                                The input should be a well-formed SQLite query to extract information based on the user's question.
                                 The query result will be returned as plain text, not in JSON format.
                             """,
                         }
@@ -136,14 +114,6 @@ async def initialize():
     ]
 
     try:
-        sync_openai_client = AzureOpenAI(
-            azure_endpoint=AZURE_OPENAI_ENDPOINT,
-            api_key=api_key,
-            api_version=AZURE_OPENAI_API_VERSION,
-        )
-
-        assistant = sync_openai_client.beta.assistants.retrieve(assistant_id=assistant_id)
-
         sync_openai_client.beta.assistants.update(
             assistant_id=assistant.id,
             name="Contoso Sales Assistant",
@@ -153,19 +123,16 @@ async def initialize():
         )
 
         config.ui.name = assistant.name
-        logger.info(f"Assistant initialized: {assistant.name}")
-
-        return assistant
+        ASSISTANT_READY = True
     except openai.NotFoundError as e:
-        logger.error(f"Assistant not found: {e}")
-        return None
+        logger.error("Assistant not found: %s", str(e))
     except Exception as e:
-        logger.error(f"An error occurred initializing the assistant: {e}")
-        return None
+        logger.error("An error occurred initializing the assistant: %s", str(e))
 
 
 @cl.set_starters
-async def set_starters():
+async def set_starters() -> list[cl.Starter]:
+    """Set the starters for the assistant"""
     return [
         cl.Starter(
             label="Help",
@@ -190,14 +157,15 @@ async def set_starters():
     ]
 
 
-async def get_thread_id(async_openai_client) -> str:
+async def get_thread_id(async_openai_client: AsyncAzureOpenAI) -> str:
+    """Get the thread ID for the conversation"""
     if thread := cl.user_session.get("thread_id"):
         return thread
 
     try:
         thread = await async_openai_client.beta.threads.create()
         cl.user_session.set("thread_id", thread.id)
-        cl.Message(content="New thread created.").send()
+        # await cl.Message(content="New thread created.").send()
         return thread.id
     except Exception as e:
         await cl.Message(content=str(e)).send()
@@ -205,6 +173,7 @@ async def get_thread_id(async_openai_client) -> str:
 
 
 async def cancel_thread_run(thread_id: str) -> None:
+    """Cancel all runs in a thread"""
     client = get_openai_client()
     if not thread_id or not client:
         return
@@ -219,6 +188,7 @@ async def cancel_thread_run(thread_id: str) -> None:
 
 
 async def get_attachments(message: cl.Message, async_openai_client: AsyncAzureOpenAI) -> Dict:
+    """Upload attachments to the assistant"""
     file_paths = [file.path for file in message.elements]
     if not file_paths:
         return None
@@ -239,15 +209,15 @@ async def get_attachments(message: cl.Message, async_openai_client: AsyncAzureOp
 
 @cl.on_message
 async def main(message: cl.Message) -> None:
-    global assistant
+    """Handle the conversation with the assistant"""
     completed = False
 
     if assistant is None:
-        assistant = await initialize()
-        if assistant is None:
-            await cl.Message(content="An error occurred initializing the assistant.").send()
-            logger.error("Assistant not initialized.")
-            return
+        await cl.Message(content="An error occurred initializing the assistant.").send()
+        logger.error("Assistant not initialized.")
+        return
+
+    await initialize()
 
     async_openai_client = get_openai_client()
     thread_id = await get_thread_id(async_openai_client)
@@ -290,7 +260,7 @@ async def main(message: cl.Message) -> None:
     except Exception as e:
         await cl.Message(content=f"An error occurred: {e}").send()
         await cl.Message(content="Please try again in a moment.").send()
-        logger.error(f"An error calling the LLM occurred: {e}")
+        logger.error("An error calling the LLM occurred: %s", str(e))
     finally:
         if not completed:
             await cancel_thread_run(thread_id)

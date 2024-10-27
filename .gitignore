@@ -16,3 +16,4 @@ appsettings.*.json
 
 # AZD
 .azure/
+.files/

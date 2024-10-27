@@ -19,7 +19,10 @@ class SalesData:
 
     async def connect(self: "SalesData") -> None:
         env = os.getenv("ENV", "development")
-        db_uri = f"file:{'src/' if env == 'development' else ''}{DATA_BASE}?mode=ro"
+        if env == "development":
+            db_uri = f"file:src/{DATA_BASE}?mode=ro"
+        elif env == "production":
+            db_uri = f"file:{DATA_BASE}?mode=ro"
 
         try:
             self.conn = await aiosqlite.connect(db_uri, uri=True)
@@ -100,28 +103,78 @@ class SalesData:
 
         return database_info
 
-    async def ask_database(self: "SalesData", query: str) -> QueryResults:
-        """Function to query SQLite database with a provided SQL query."""
-        data_results = QueryResults()
 
-        try:
-            # Perform the query asynchronously
-            async with self.conn.execute(query) as cursor:
-                rows = await cursor.fetchall()
-                columns = [description[0] for description in cursor.description]
+async def initialize():
+    sales_data = SalesData()
 
-            if not rows:  # No need to create DataFrame if there are no rows
-                data_results.display_format = "The query returned no results. Try a different query."
-                data_results.json_format = ""
-            else:
-                # Only create DataFrame if there are rows
-                data = pd.DataFrame(rows, columns=columns)
-                data_results.display_format = data.to_string(index=False)
-                data_results.json_format = data.to_json(index=False, orient="split")
+    await sales_data.connect()
+    database_schema_string = await sales_data.get_database_info()
 
-        except Exception as e:
-            error_message = f"Query failed with error: {e}"
-            data_results.display_format = error_message
-            data_results.json_format = json.dumps({"error": str(e), "query": query})
+    instructions = {
+        "You are a polite, professional assistant specializing in Contoso sales data analysis. Provide clear, concise explanations.",
+        "Use the `ask_database` function for sales data queries, defaulting to aggregated data unless a detailed breakdown is requested. The function returns JSON data.",
+        f"Reference the following SQLite schema for the sales database: {database_schema_string}.",
+        "Use the `file_search` tool to retrieve product information from uploaded files when relevant. Prioritize Contoso sales database data over files when responding.",
+        "For sales data inquiries, present results in markdown tables by default unless the user requests visualizations.",
+        "For visualizations: 1. Write and test code in your sandboxed environment. 2. Use the user's language preferences for visualizations (e.g. chart labels). 3. Display successful visualizations or retry upon error.",
+        "If asked for 'help,' suggest example queries (e.g., 'What was last quarter's revenue?' or 'Top-selling products in Europe?').",
+        "Only use data from the Contoso sales database or uploaded files to respond. If the query falls outside the available data or your expertise, or you're unsure, reply with: I'm unable to assist with that. Please ask more specific questions about Contoso sales and products or contact IT for further help.",
+        "If faced with aggressive behavior, calmly reply: 'I'm here to help with sales data inquiries. For other issues, please contact IT.'",
+        "Tailor responses to the user's language preferences, including terminology, measurement units, currency, and formats.",
+        "For download requests, respond with: 'The download link is provided below.'",
+        "Do not include markdown links to visualizations in your responses.",
+    }
 
-        return data_results
+    tools_list = [
+        {"type": "code_interpreter"},
+        {"type": "file_search"},
+        {
+            "type": "function",
+            "function": {
+                "name": "ask_database",
+                "description": "This function is used to answer user questions about Contoso sales data by executing SQLite queries against the database.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "query": {
+                            "type": "string",
+                            "description": f"""
+                                The input should be a well-formed SQLite query to extract information based on the user's question. 
+                                The query result will be returned as plain text, not in JSON format.
+                            """,
+                        }
+                    },
+                    "required": ["query"],
+                    "additionalProperties": False,
+                },
+            },
+        },
+    ]
+
+    try:
+        sync_openai_client = AzureOpenAI(
+            azure_endpoint=AZURE_OPENAI_ENDPOINT,
+            api_key=api_key,
+            api_version=AZURE_OPENAI_API_VERSION,
+        )
+
+        assistant = sync_openai_client.beta.assistants.retrieve(assistant_id=assistant_id)
+
+        sync_openai_client.beta.assistants.update(
+            assistant_id=assistant.id,
+            name="Contoso Sales Assistant",
+            model=AZURE_OPENAI_DEPLOYMENT,
+            instructions=str(instructions),
+            tools=tools_list,
+        )
+
+        config.ui.name = assistant.name
+        logger.info(f"Assistant initialized: {assistant.name}")
+
+        return assistant
+    except openai.NotFoundError as e:
+        logger.error(f"Assistant not found: {e}")
+        return None
+    except Exception as e:
+        logger.error(f"An error occurred initializing the assistant: {e}")
+        return None
