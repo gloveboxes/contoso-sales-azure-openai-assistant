@@ -55,8 +55,8 @@ def get_openai_client() -> AsyncAzureOpenAI:
 @cl.password_auth_callback
 async def auth_callback(username: str, password: str) -> cl.User | None:
     """Authenticate the user"""
-    if (username, password) == ("assistant", ASSISTANT_PASSWORD):
-        return cl.User(identifier="assistant", metadata={"role": "admin", "provider": "credentials"})
+    if (username, password) == ("sales@contoso.com", ASSISTANT_PASSWORD):
+        return cl.User(identifier="sales@contoso.com", metadata={"role": "sales", "provider": "credentials"})
     return None
 
 
