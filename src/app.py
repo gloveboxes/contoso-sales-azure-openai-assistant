@@ -33,12 +33,13 @@ sales_data = SalesData()
 cl.instrument_openai()
 ASSISTANT_READY = False
 
-with AzureOpenAI(
+sync_openai_client = AzureOpenAI(
     azure_endpoint=AZURE_OPENAI_ENDPOINT,
     api_key=AZURE_OPENAI_API_KEY,
     api_version=AZURE_OPENAI_API_VERSION,
-) as sync_openai_client:
-    assistant = sync_openai_client.beta.assistants.retrieve(assistant_id=AZURE_OPENAI_ASSISTANT_ID)
+)
+
+assistant = sync_openai_client.beta.assistants.retrieve(assistant_id=AZURE_OPENAI_ASSISTANT_ID)
 
 function_map: Dict[str, Callable[[Any], str]] = {
     "ask_database": lambda args: sales_data.ask_database(query=args.get("query")),
