@@ -28,32 +28,26 @@ AZURE_OPENAI_API_VERSION = os.environ.get("AZURE_OPENAI_API_VERSION")
 AZURE_OPENAI_ASSISTANT_ID = os.environ.get("AZURE_OPENAI_ASSISTANT_ID")
 AZURE_OPENAI_DEPLOYMENT = os.getenv("AZURE_OPENAI_DEPLOYMENT")
 AZURE_AI_PROXY_ENDPOINT = os.getenv("AZURE_AI_PROXY_ENDPOINT")
+USER_PASSWORD = os.getenv("USER_PASSWORD")
 
-
-print(f"The Azure OpenAI endpoint is: {AZURE_OPENAI_ENDPOINT}")
-print(f"The Azure OpenAI API Key is: {AZURE_OPENAI_API_KEY}")
-print(f"The Azure OpenAI API Version is: {AZURE_OPENAI_API_VERSION}")
-print(f"The Assistant ID is: {AZURE_OPENAI_ASSISTANT_ID}")
-print(f"The Deployment is: {AZURE_OPENAI_DEPLOYMENT}")
-
-
-assistant = None
 sales_data = SalesData()
 cl.instrument_openai()
+ASSISTANT_READY = False
+
+with AzureOpenAI(
+    azure_endpoint=AZURE_OPENAI_ENDPOINT,
+    api_key=AZURE_OPENAI_API_KEY,
+    api_version=AZURE_OPENAI_API_VERSION,
+) as sync_openai_client:
+    assistant = sync_openai_client.beta.assistants.retrieve(assistant_id=AZURE_OPENAI_ASSISTANT_ID)
 
 function_map: Dict[str, Callable[[Any], str]] = {
     "ask_database": lambda args: sales_data.ask_database(query=args.get("query")),
 }
 
 
-def get_openai_client():
-    print()
-    print(f"The Azure OpenAI endpoint is: {AZURE_OPENAI_ENDPOINT}")
-    print(f"The Azure OpenAI API Key is: {AZURE_OPENAI_API_KEY}")
-    print(f"The Azure OpenAI API Version is: {AZURE_OPENAI_API_VERSION}")
-    print(f"The Assistant ID is: {AZURE_OPENAI_ASSISTANT_ID}")
-    print(f"The Deployment is: {AZURE_OPENAI_DEPLOYMENT}")
-
+def get_openai_client() -> AsyncAzureOpenAI:
+    """Get an instance of the OpenAI"""
     return AsyncAzureOpenAI(
         azure_endpoint=AZURE_OPENAI_ENDPOINT,
         api_key=AZURE_OPENAI_API_KEY,
@@ -61,22 +55,23 @@ def get_openai_client():
     )
 
 
-async def authenticate_api_key(api_key: str):
-    url = f"{AZURE_AI_PROXY_ENDPOINT}/eventinfo"
-    headers = {"api-key": api_key}
-    async with httpx.AsyncClient() as client:
-        response = await client.post(url, headers=headers)
-    if response.status_code == 200:
-        return response.text
-    return None
+# async def authenticate_api_key(api_key: str):
+#     url = f"{AZURE_AI_PROXY_ENDPOINT}/eventinfo"
+#     headers = {"api-key": api_key}
+#     async with httpx.AsyncClient() as client:
+#         response = await client.post(url, headers=headers)
+#     if response.status_code == 200:
+#         return response.text
+#     return None
 
 
 @cl.password_auth_callback
 async def auth_callback(username: str, password: str):
+    """Authenticate the user"""
     # Fetch the user matching username from your database
     # and compare the hashed password with the value stored in the database
-    if (username, password) == ("admin", "admin"):
-        return cl.User(identifier="admin", metadata={"role": "admin", "provider": "credentials"})
+    if (username, password) == ("assistant", USER_PASSWORD):
+        return cl.User(identifier="assistant", metadata={"role": "admin", "provider": "credentials"})
     return None
 
     # event_response = await authenticate_api_key(password)
@@ -87,7 +82,12 @@ async def auth_callback(username: str, password: str):
     # return None
 
 
-async def initialize():
+async def initialize() -> None:
+    """Initialize the assistant with the sales data schema and instructions."""
+    global ASSISTANT_READY
+    if ASSISTANT_READY:
+        return
+
     await sales_data.connect()
     database_schema_string = await sales_data.get_database_info()
 
@@ -133,26 +133,13 @@ async def initialize():
     ]
 
     try:
-        print(f"The Azure OpenAI endpoint is: {AZURE_OPENAI_ENDPOINT}")
-        print(f"The Azure OpenAI API Key is: {AZURE_OPENAI_API_KEY}")
-        print(f"The Azure OpenAI API Version is: {AZURE_OPENAI_API_VERSION}")
-        print(f"The Assistant ID is: {AZURE_OPENAI_ASSISTANT_ID}")
-        print(f"The Deployment is: {AZURE_OPENAI_DEPLOYMENT}")
+        # sync_openai_client = AzureOpenAI(
+        #     azure_endpoint=AZURE_OPENAI_ENDPOINT,
+        #     api_key=AZURE_OPENAI_API_KEY,
+        #     api_version=AZURE_OPENAI_API_VERSION,
+        # )
 
-        logger.info(f"The Azure OpenAI endpoint is: {AZURE_OPENAI_ENDPOINT}")
-        logger.info(f"The Azure OpenAI API Key is: {AZURE_OPENAI_API_KEY}")
-        logger.info(f"The Azure OpenAI API Version is: {AZURE_OPENAI_API_VERSION}")
-        logger.info(f"The Assistant ID is: {AZURE_OPENAI_ASSISTANT_ID}")
-        logger.info(f"The Deployment is: {AZURE_OPENAI_DEPLOYMENT}")
-
-
-        sync_openai_client = AzureOpenAI(
-            azure_endpoint=AZURE_OPENAI_ENDPOINT,
-            api_key=AZURE_OPENAI_API_KEY,
-            api_version=AZURE_OPENAI_API_VERSION,
-        )
-
-        assistant = sync_openai_client.beta.assistants.retrieve(assistant_id=AZURE_OPENAI_ASSISTANT_ID)
+        # assistant = sync_openai_client.beta.assistants.retrieve(assistant_id=AZURE_OPENAI_ASSISTANT_ID)
 
         sync_openai_client.beta.assistants.update(
             assistant_id=assistant.id,
@@ -163,15 +150,15 @@ async def initialize():
         )
 
         config.ui.name = assistant.name
-        logger.info(f"Assistant initialized: {assistant.name}")
 
-        return assistant
+        ASSISTANT_READY = True
+
     except openai.NotFoundError as e:
         logger.error(f"Assistant not found: {e}")
-        return None
+        return
     except Exception as e:
         logger.error(f"An error occurred initializing the assistant: {e}")
-        return None
+        return
 
 
 @cl.set_starters
@@ -215,6 +202,7 @@ async def get_thread_id(async_openai_client) -> str:
 
 
 async def cancel_thread_run(thread_id: str) -> None:
+    """Cancel all runs in a thread"""
     client = get_openai_client()
     if not thread_id or not client:
         return
@@ -229,6 +217,7 @@ async def cancel_thread_run(thread_id: str) -> None:
 
 
 async def get_attachments(message: cl.Message, async_openai_client: AsyncAzureOpenAI) -> Dict:
+    """Upload attachments to the assistant"""
     file_paths = [file.path for file in message.elements]
     if not file_paths:
         return None
@@ -249,15 +238,15 @@ async def get_attachments(message: cl.Message, async_openai_client: AsyncAzureOp
 
 @cl.on_message
 async def main(message: cl.Message) -> None:
-    global assistant
+    """Handle the conversation with the assistant"""
     completed = False
 
     if assistant is None:
-        assistant = await initialize()
-        if assistant is None:
-            await cl.Message(content="An error occurred initializing the assistant.").send()
-            logger.error("Assistant not initialized.")
-            return
+        await cl.Message(content="An error occurred initializing the assistant.").send()
+        logger.error("Assistant not initialized.")
+        return
+
+    await initialize()
 
     async_openai_client = get_openai_client()
     thread_id = await get_thread_id(async_openai_client)
@@ -300,7 +289,7 @@ async def main(message: cl.Message) -> None:
     except Exception as e:
         await cl.Message(content=f"An error occurred: {e}").send()
         await cl.Message(content="Please try again in a moment.").send()
-        logger.error(f"An error calling the LLM occurred: {e}")
+        logger.error("An error calling the LLM occurred: %s", e)
     finally:
         if not completed:
             await cancel_thread_run(thread_id)

@@ -12,10 +12,14 @@ param openAiEndpoint string
 param allowedOrigins string = '' // comma separated list of allowed origins - no slash at the end!
 @secure()
 param chainlitAuthSecret string
+@secure()
+param literalApiKey string
 param azureOpenAiApiVersion string = '2024-05-01-preview'
 param assistantId string
 param openAiApiKey string
 param azureAiProxyEndpoint string
+@secure()
+param userPassword string
 
 resource acaIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
   name: identityName
@@ -50,6 +54,14 @@ module app 'core/host/container-app-upsert.bicep' = {
         name: 'chainlit-auth-secret'
         value: chainlitAuthSecret
       }
+      {
+        name: 'literal-api-key'
+        value: literalApiKey
+      }
+      {
+        name: 'user-password'
+        value: userPassword
+      }
     ]
     env: [
       {
@@ -67,6 +79,14 @@ module app 'core/host/container-app-upsert.bicep' = {
       {
         name: 'CHAINLIT_AUTH_SECRET'
         secretRef: 'chainlit-auth-secret'
+      }
+      {
+        name: 'LITERAL_API_KEY'
+        secretRef: 'literal-api-key'
+      }
+      {
+        name: 'USER_PASSWORD'
+        secretRef: 'user-password'
       }
       {
         name: 'ENV'

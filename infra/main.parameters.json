@@ -38,8 +38,8 @@
       "chainlitAuthSecret": {
         "value": "${CHAINLIT_AUTH_SECRET}"
       },
-      "azureAiProxyEndpoint": {
-        "value": "${AZURE_AI_PROXY_ENDPOINT}"
+      "LiteralApiKey": {
+        "value": "${LITERAL_API_KEY}"
       }
     }
   }

@@ -103,15 +103,11 @@ class EventHandler(AsyncAssistantEventHandler):
                     if output.type == "logs":
                         pass
 
-    async def on_image_file_done(self, image_file):
+    async def on_image_file_done(self, image_file) -> None:
         image_id = image_file.file_id
-        logger.info(f"Image file id: {image_id}")
         response = await self.async_openai_client.files.with_raw_response.content(image_id)
-        logger.info(f"Image file response: {response}")
-        logger.info(f"Image file response length: {len(response.content)} bytes")
-        # logger.info(f"Image file response: {response.text}")
         image_element = cl.Image(name=image_id, content=response.content, display="inline", size="large")
-        # await self.async_openai_client.files.delete(image_id)
+        await self.async_openai_client.files.delete(image_id)
         if not self.current_message.elements:
             self.current_message.elements = []
         self.current_message.elements.append(image_element)
