@@ -257,7 +257,7 @@ async def main(message: cl.Message) -> None:
     except Exception as e:
         await cl.Message(content=f"An error occurred: {e}").send()
         await cl.Message(content="Please try again in a moment.").send()
-        logger.error("An error calling the LLM occurred: %s", e)
+        logger.error("An error calling the LLM occurred: %s", str(e))
     finally:
         if not completed:
             await cancel_thread_run(thread_id)
