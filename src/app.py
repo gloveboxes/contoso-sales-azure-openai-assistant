@@ -1,5 +1,4 @@
 import asyncio
-import json
 import logging
 import os
 from contextlib import suppress
@@ -7,7 +6,6 @@ from pathlib import Path
 from typing import Any, Callable, Dict
 
 import chainlit as cl
-import httpx
 import openai
 from chainlit.config import config
 from dotenv import load_dotenv
@@ -26,8 +24,7 @@ AZURE_OPENAI_API_KEY = os.environ.get("AZURE_OPENAI_API_KEY")
 AZURE_OPENAI_API_VERSION = os.environ.get("AZURE_OPENAI_API_VERSION")
 AZURE_OPENAI_ASSISTANT_ID = os.environ.get("AZURE_OPENAI_ASSISTANT_ID")
 AZURE_OPENAI_DEPLOYMENT = os.getenv("AZURE_OPENAI_DEPLOYMENT")
-AZURE_AI_PROXY_ENDPOINT = os.getenv("AZURE_AI_PROXY_ENDPOINT")
-USER_PASSWORD = os.getenv("USER_PASSWORD")
+ASSISTANT_PASSWORD = os.getenv("ASSISTANT_PASSWORD")
 
 sales_data = SalesData()
 cl.instrument_openai()
@@ -55,29 +52,10 @@ def get_openai_client() -> AsyncAzureOpenAI:
     )
 
 
-async def authenticate_api_key(api_key: str) -> str | None:
-    """Authenticate the API key with the Azure AI Proxy"""
-    url = f"{AZURE_AI_PROXY_ENDPOINT}/eventinfo"
-    headers = {"api-key": api_key}
-    async with httpx.AsyncClient() as client:
-        response = await client.post(url, headers=headers)
-    if response.status_code == 200:
-        return response.text
-    return None
-
-
 @cl.password_auth_callback
 async def auth_callback(username: str, password: str) -> cl.User | None:
     """Authenticate the user"""
-    if AZURE_AI_PROXY_ENDPOINT:
-        event_response = await authenticate_api_key(password)
-        if event_response:
-            event_settings = json.loads(event_response)
-            event_settings.update({"api_key": password})
-            return cl.User(identifier=username, metadata=event_settings)
-        return None
-
-    if (username, password) == ("assistant", USER_PASSWORD):
+    if (username, password) == ("assistant", ASSISTANT_PASSWORD):
         return cl.User(identifier="assistant", metadata={"role": "admin", "provider": "credentials"})
     return None
 
@@ -142,9 +120,7 @@ async def initialize() -> None:
         )
 
         config.ui.name = assistant.name
-
         ASSISTANT_READY = True
-
     except openai.NotFoundError as e:
         logger.error("Assistant not found: %s", str(e))
     except Exception as e:

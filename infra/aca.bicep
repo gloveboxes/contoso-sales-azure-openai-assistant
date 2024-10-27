@@ -85,7 +85,7 @@ module app 'core/host/container-app-upsert.bicep' = {
         secretRef: 'literal-api-key'
       }
       {
-        name: 'USER_PASSWORD'
+        name: 'ASSISTANT_PASSWORD'
         secretRef: 'user-password'
       }
       {
