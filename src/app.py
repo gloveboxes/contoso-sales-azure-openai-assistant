@@ -10,7 +10,6 @@ import chainlit as cl
 import httpx
 import openai
 from chainlit.config import config
-from chainlit.types import ThreadDict
 from dotenv import load_dotenv
 from openai import AsyncAzureOpenAI, AzureOpenAI
 
@@ -29,6 +28,7 @@ AZURE_OPENAI_ASSISTANT_ID = os.environ.get("AZURE_OPENAI_ASSISTANT_ID")
 AZURE_OPENAI_DEPLOYMENT = os.getenv("AZURE_OPENAI_DEPLOYMENT")
 AZURE_AI_PROXY_ENDPOINT = os.getenv("AZURE_AI_PROXY_ENDPOINT")
 USER_PASSWORD = os.getenv("USER_PASSWORD")
+AI_PROXY_AUTH = os.getenv("AI_PROXY_AUTH", None)
 
 sales_data = SalesData()
 cl.instrument_openai()
@@ -55,31 +55,31 @@ def get_openai_client() -> AsyncAzureOpenAI:
     )
 
 
-# async def authenticate_api_key(api_key: str):
-#     url = f"{AZURE_AI_PROXY_ENDPOINT}/eventinfo"
-#     headers = {"api-key": api_key}
-#     async with httpx.AsyncClient() as client:
-#         response = await client.post(url, headers=headers)
-#     if response.status_code == 200:
-#         return response.text
-#     return None
+async def authenticate_api_key(api_key: str) -> str | None:
+    """Authenticate the API key with the Azure AI Proxy"""
+    url = f"{AZURE_AI_PROXY_ENDPOINT}/eventinfo"
+    headers = {"api-key": api_key}
+    async with httpx.AsyncClient() as client:
+        response = await client.post(url, headers=headers)
+    if response.status_code == 200:
+        return response.text
+    return None
 
 
 @cl.password_auth_callback
-async def auth_callback(username: str, password: str):
+async def auth_callback(username: str, password: str) -> cl.User | None:
     """Authenticate the user"""
-    # Fetch the user matching username from your database
-    # and compare the hashed password with the value stored in the database
+    if AI_PROXY_AUTH:
+        event_response = await authenticate_api_key(password)
+        if event_response:
+            event_settings = json.loads(event_response)
+            event_settings.update({"api_key": password})
+            return cl.User(identifier=username, metadata=event_settings)
+        return None
+
     if (username, password) == ("assistant", USER_PASSWORD):
         return cl.User(identifier="assistant", metadata={"role": "admin", "provider": "credentials"})
     return None
-
-    # event_response = await authenticate_api_key(password)
-    # if event_response:
-    #     event_settings = json.loads(event_response)
-    #     event_settings.update({"api_key": password})
-    #     return cl.User(identifier=username, metadata=event_settings)
-    # return None
 
 
 async def initialize() -> None:
@@ -120,7 +120,7 @@ async def initialize() -> None:
                         "query": {
                             "type": "string",
                             "description": f"""
-                                The input should be a well-formed SQLite query to extract information based on the user's question. 
+                                The input should be a well-formed SQLite query to extract information based on the user's question.
                                 The query result will be returned as plain text, not in JSON format.
                             """,
                         }
@@ -133,14 +133,6 @@ async def initialize() -> None:
     ]
 
     try:
-        # sync_openai_client = AzureOpenAI(
-        #     azure_endpoint=AZURE_OPENAI_ENDPOINT,
-        #     api_key=AZURE_OPENAI_API_KEY,
-        #     api_version=AZURE_OPENAI_API_VERSION,
-        # )
-
-        # assistant = sync_openai_client.beta.assistants.retrieve(assistant_id=AZURE_OPENAI_ASSISTANT_ID)
-
         sync_openai_client.beta.assistants.update(
             assistant_id=assistant.id,
             name="Contoso Sales Assistant",
@@ -154,15 +146,14 @@ async def initialize() -> None:
         ASSISTANT_READY = True
 
     except openai.NotFoundError as e:
-        logger.error(f"Assistant not found: {e}")
-        return
+        logger.error("Assistant not found: %s", str(e))
     except Exception as e:
-        logger.error(f"An error occurred initializing the assistant: {e}")
-        return
+        logger.error("An error occurred initializing the assistant: %s", str(e))
 
 
 @cl.set_starters
-async def set_starters():
+async def set_starters() -> list[cl.Starter]:
+    """Set the starters for the assistant"""
     return [
         cl.Starter(
             label="Help",
@@ -187,7 +178,8 @@ async def set_starters():
     ]
 
 
-async def get_thread_id(async_openai_client) -> str:
+async def get_thread_id(async_openai_client: AsyncAzureOpenAI) -> str:
+    """Get the thread ID for the conversation"""
     if thread := cl.user_session.get("thread_id"):
         return thread
 
