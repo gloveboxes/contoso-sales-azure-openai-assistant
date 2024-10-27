@@ -55,6 +55,9 @@ def get_openai_client() -> AsyncAzureOpenAI:
 @cl.password_auth_callback
 async def auth_callback(username: str, password: str) -> cl.User | None:
     """Authenticate the user"""
+    # Normally, you would check the username and password against a database.
+    # Or use OAuth or custom provider for authentication. 
+    # See Chainlit documentation https://docs.chainlit.io/authentication/overview
     if (username, password) == ("sales@contoso.com", ASSISTANT_PASSWORD):
         return cl.User(identifier="sales@contoso.com", metadata={"role": "sales", "provider": "credentials"})
     return None
