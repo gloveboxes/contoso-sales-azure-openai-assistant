@@ -28,7 +28,6 @@ AZURE_OPENAI_ASSISTANT_ID = os.environ.get("AZURE_OPENAI_ASSISTANT_ID")
 AZURE_OPENAI_DEPLOYMENT = os.getenv("AZURE_OPENAI_DEPLOYMENT")
 AZURE_AI_PROXY_ENDPOINT = os.getenv("AZURE_AI_PROXY_ENDPOINT")
 USER_PASSWORD = os.getenv("USER_PASSWORD")
-AI_PROXY_AUTH = os.getenv("AI_PROXY_AUTH", None)
 
 sales_data = SalesData()
 cl.instrument_openai()
@@ -69,7 +68,7 @@ async def authenticate_api_key(api_key: str) -> str | None:
 @cl.password_auth_callback
 async def auth_callback(username: str, password: str) -> cl.User | None:
     """Authenticate the user"""
-    if AI_PROXY_AUTH:
+    if AZURE_AI_PROXY_ENDPOINT:
         event_response = await authenticate_api_key(password)
         if event_response:
             event_settings = json.loads(event_response)
