@@ -19,7 +19,6 @@ param name string
 ])
 param location string
 
-
 @description('Id of the user or app to assign application roles')
 param principalId string = ''
 
@@ -29,11 +28,8 @@ param createRoleForUser bool = true
 param acaExists bool = false
 param allowedOrigins string = ''
 
-param openAiResourceName string = ''
-param openAiResourceGroupName string = ''
-
 param openAiSkuName string = ''
-param openAiDeploymentCapacity int = 30
+param openAiDeploymentCapacity int = 90
 @secure()
 param chainlitAuthSecret string
 @secure()
@@ -45,18 +41,13 @@ param assistantPassword string = substring(uniqueString(subscription().id, name,
 @description('Whether the deployment is running on GitHub Actions')
 param runningOnGh string = ''
 
-param uniqueGuid string = newGuid()
-var resourceToken = toLower(uniqueString(subscription().id, name, location, uniqueGuid))
+var resourceToken = toLower(uniqueString(subscription().id, name, location))
 var tags = { 'azd-env-name': name }
 
 resource resourceGroup 'Microsoft.Resources/resourceGroups@2021-04-01' = {
-  name: '${name}-rg'
+  name: 'rg-${name}'
   location: location
   tags: tags
-}
-
-resource openAiResourceGroup 'Microsoft.Resources/resourceGroups@2021-04-01' existing = if (!empty(openAiResourceGroupName)) {
-  name: !empty(openAiResourceGroupName) ? openAiResourceGroupName : resourceGroup.name
 }
 
 var prefix = '${name}-${resourceToken}'
@@ -66,9 +57,9 @@ var openAiDeploymentVersion = '2024-08-06'
 
 module openAi 'core/ai/cognitiveservices.bicep' = {
   name: 'openai'
-  scope: openAiResourceGroup
+  scope: resourceGroup
   params: {
-    name: !empty(openAiResourceName) ? openAiResourceName : '${resourceToken}-cog'
+    name: '${resourceToken}-cog'
     location: location
     tags: tags
     sku: {
@@ -146,12 +137,12 @@ module aca 'aca.bicep' = {
     openAiApiKey: openAi.outputs.key
     azureOpenAiApiVersion: azureOpenAiApiVersion
     openAiDeploymentName: openAiDeploymentName
-    userPassword:assistantPassword
+    userPassword: assistantPassword
   }
 }
 
 module openAiRoleUser 'core/security/role.bicep' = if (createRoleForUser && empty(runningOnGh)) {
-  scope: openAiResourceGroup
+  scope: resourceGroup
   name: 'openai-role-user'
   params: {
     principalId: principalId
@@ -161,7 +152,7 @@ module openAiRoleUser 'core/security/role.bicep' = if (createRoleForUser && empt
 }
 
 module openAiRoleBackend 'core/security/role.bicep' = {
-  scope: openAiResourceGroup
+  scope: resourceGroup
   name: 'openai-role-backend'
   params: {
     principalId: aca.outputs.SERVICE_ACA_IDENTITY_PRINCIPAL_ID
@@ -176,7 +167,7 @@ output AZURE_OPENAI_CHATGPT_DEPLOYMENT string = openAiDeploymentName
 output AZURE_OPENAI_ENDPOINT string = openAi.outputs.endpoint
 output AZURE_OPENAI_RESOURCE string = openAi.outputs.name
 output AZURE_OPENAI_RESOURCE_LOCATION string = openAi.outputs.location
-output AZURE_OPENAI_RESOURCE_GROUP string = openAiResourceGroup.name
+output AZURE_OPENAI_RESOURCE_GROUP string = resourceGroup.name
 output AZURE_OPENAI_SKU_NAME string = openAi.outputs.skuName
 
 output SERVICE_ACA_IDENTITY_PRINCIPAL_ID string = aca.outputs.SERVICE_ACA_IDENTITY_PRINCIPAL_ID
