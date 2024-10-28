@@ -17,9 +17,6 @@
       "openAiResourceGroupName": {
         "value": "${AZURE_OPENAI_RESOURCE_GROUP}"
       },
-      "openAiResourceLocation": {
-        "value": "${AZURE_OPENAI_RESOURCE_LOCATION}"
-      },
       "openAiSkuName": {
         "value": "${AZURE_OPENAI_SKU_NAME}"
       },

@@ -7,7 +7,18 @@ param name string
 
 @minLength(1)
 @description('Primary location for all resources')
+@allowed([
+  'eastus'
+  'eastus2'
+  'northcentralus'
+  'southcentralus'
+  'spaincentral'
+  'swedencentral'
+  'westus'
+  'westus3'
+])
 param location string
+
 
 @description('Id of the user or app to assign application roles')
 param principalId string = ''
@@ -20,25 +31,7 @@ param allowedOrigins string = ''
 
 param openAiResourceName string = ''
 param openAiResourceGroupName string = ''
-@description('Location for the OpenAI resource group')
-@allowed([
-  'canadaeast'
-  'eastus'
-  'eastus2'
-  'francecentral'
-  'switzerlandnorth'
-  'uksouth'
-  'japaneast'
-  'northcentralus'
-  'australiaeast'
-  'swedencentral'
-])
-@metadata({
-  azd: {
-    type: 'location'
-  }
-})
-param openAiResourceLocation string
+
 param openAiSkuName string = ''
 param openAiDeploymentCapacity int = 30
 @secure()
@@ -46,14 +39,14 @@ param chainlitAuthSecret string
 @secure()
 param literalApiKey string
 param azureOpenAiApiVersion string = '2024-05-01-preview'
-param azureAiProxyEndpoint string
 @secure()
-param userPassword string = substring(uniqueString(subscription().id, name, newGuid()), 0, 12)
+param assistantPassword string = substring(uniqueString(subscription().id, name, newGuid()), 0, 12)
 
 @description('Whether the deployment is running on GitHub Actions')
 param runningOnGh string = ''
 
-var resourceToken = toLower(uniqueString(subscription().id, name, location))
+param uniqueGuid string = newGuid()
+var resourceToken = toLower(uniqueString(subscription().id, name, location, uniqueGuid))
 var tags = { 'azd-env-name': name }
 
 resource resourceGroup 'Microsoft.Resources/resourceGroups@2021-04-01' = {
@@ -69,12 +62,14 @@ resource openAiResourceGroup 'Microsoft.Resources/resourceGroups@2021-04-01' exi
 var prefix = '${name}-${resourceToken}'
 
 var openAiDeploymentName = 'gpt-4o'
+var openAiDeploymentVersion = '2024-08-06'
+
 module openAi 'core/ai/cognitiveservices.bicep' = {
   name: 'openai'
   scope: openAiResourceGroup
   params: {
     name: !empty(openAiResourceName) ? openAiResourceName : '${resourceToken}-cog'
-    location: !empty(openAiResourceLocation) ? openAiResourceLocation : location
+    location: location
     tags: tags
     sku: {
       name: !empty(openAiSkuName) ? openAiSkuName : 'S0'
@@ -84,7 +79,8 @@ module openAi 'core/ai/cognitiveservices.bicep' = {
         name: openAiDeploymentName
         model: {
           format: 'OpenAI'
-          name: 'gpt-4o'
+          name: openAiDeploymentName
+          version: openAiDeploymentVersion
         }
         sku: {
           name: 'Standard'
@@ -100,7 +96,7 @@ module deploymentScriptModule 'script.bicep' = {
   scope: resourceGroup
   params: {
     openAiEndpoint: openAi.outputs.endpoint
-    openAiResourceLocation: location
+    location: location
     openAiApiKey: openAi.outputs.key
     openAiModel: openAiDeploymentName
   }
@@ -150,8 +146,7 @@ module aca 'aca.bicep' = {
     openAiApiKey: openAi.outputs.key
     azureOpenAiApiVersion: azureOpenAiApiVersion
     openAiDeploymentName: openAiDeploymentName
-    azureAiProxyEndpoint:azureAiProxyEndpoint
-    userPassword:userPassword
+    userPassword:assistantPassword
   }
 }
 
@@ -193,4 +188,5 @@ output AZURE_CONTAINER_ENVIRONMENT_NAME string = containerApps.outputs.environme
 output AZURE_CONTAINER_REGISTRY_ENDPOINT string = containerApps.outputs.registryLoginServer
 output AZURE_CONTAINER_REGISTRY_NAME string = containerApps.outputs.registryName
 
-output ASSISTANT_PASSWORD string = userPassword
+#disable-next-line outputs-should-not-contain-secrets // This password is required for the user to access the assistant
+output assistantPassword string = assistantPassword

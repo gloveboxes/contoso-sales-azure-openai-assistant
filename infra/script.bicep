@@ -1,5 +1,5 @@
 param openAiEndpoint string
-param openAiResourceLocation string
+param location string
 param openAiAssistantName string = 'Contoso Sales Assistant'
 param openAiModel string
 @secure()
@@ -7,7 +7,7 @@ param openAiApiKey string
 
 resource deploymentScript 'Microsoft.Resources/deploymentScripts@2023-08-01' = {
   name: 'createOpenAIAssistant'
-  location: openAiResourceLocation
+  location: location
   kind: 'AzureCLI'
   properties: {
     azCliVersion: '2.52.0'

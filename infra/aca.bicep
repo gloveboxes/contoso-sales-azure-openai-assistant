@@ -13,11 +13,10 @@ param allowedOrigins string = '' // comma separated list of allowed origins - no
 @secure()
 param chainlitAuthSecret string
 @secure()
-param literalApiKey string
+param literalApiKey string = ''
 param azureOpenAiApiVersion string = '2024-05-01-preview'
 param assistantId string
 param openAiApiKey string
-param azureAiProxyEndpoint string
 @secure()
 param userPassword string
 
@@ -37,6 +36,9 @@ module app 'core/host/container-app-upsert.bicep' = {
     exists: exists
     containerAppsEnvironmentName: containerAppsEnvironmentName
     containerRegistryName: containerRegistryName
+    containerCpuCoreCount: '0.25'
+    containerMemory: '0.5Gi'
+    containerMaxReplicas: 1
     secrets:[
       {
         name: 'azure-openai-deployment'
@@ -103,10 +105,6 @@ module app 'core/host/container-app-upsert.bicep' = {
       {
         name: 'AZURE_OPENAI_ASSISTANT_ID'
         value: assistantId
-      }
-      {
-        name: 'AZURE_AI_PROXY_ENDPOINT'
-        value: azureAiProxyEndpoint
       }
     ]
     targetPort: 80
