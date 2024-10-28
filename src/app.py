@@ -36,27 +36,26 @@ sync_openai_client = AzureOpenAI(
     api_version=AZURE_OPENAI_API_VERSION,
 )
 
-assistant = sync_openai_client.beta.assistants.retrieve(assistant_id=AZURE_OPENAI_ASSISTANT_ID)
+assistant = sync_openai_client.beta.assistants.retrieve(
+    assistant_id=AZURE_OPENAI_ASSISTANT_ID,
+)
+
+async_openai_client = AsyncAzureOpenAI(
+    azure_endpoint=AZURE_OPENAI_ENDPOINT,
+    api_key=AZURE_OPENAI_API_KEY,
+    api_version=AZURE_OPENAI_API_VERSION,
+)
 
 function_map: Dict[str, Callable[[Any], str]] = {
     "ask_database": lambda args: sales_data.ask_database(query=args.get("query")),
 }
 
 
-def get_openai_client() -> AsyncAzureOpenAI:
-    """Get an instance of the OpenAI"""
-    return AsyncAzureOpenAI(
-        azure_endpoint=AZURE_OPENAI_ENDPOINT,
-        api_key=AZURE_OPENAI_API_KEY,
-        api_version=AZURE_OPENAI_API_VERSION,
-    )
-
-
 @cl.password_auth_callback
 async def auth_callback(username: str, password: str) -> cl.User | None:
     """Authenticate the user"""
     # Normally, you would check the username and password against a database.
-    # Or use OAuth or custom provider for authentication. 
+    # Or use OAuth or custom provider for authentication.
     # See Chainlit documentation https://docs.chainlit.io/authentication/overview
     if (username, password) == ("sales@contoso.com", ASSISTANT_PASSWORD):
         return cl.User(identifier="sales@contoso.com", metadata={"role": "sales", "provider": "credentials"})
@@ -174,13 +173,12 @@ async def get_thread_id(async_openai_client: AsyncAzureOpenAI) -> str:
 
 async def cancel_thread_run(thread_id: str) -> None:
     """Cancel all runs in a thread"""
-    client = get_openai_client()
-    if not thread_id or not client:
+    if not thread_id:
         return
 
     # Wait a moment for any pending runs to spin up for cleaner cancellation
     await asyncio.sleep(2)
-    runs = await client.beta.threads.runs.list(thread_id=thread_id)
+    runs = await async_openai_client.beta.threads.runs.list(thread_id=thread_id)
     for run in runs.data:
         if run.status not in ["completed", "cancelled", "expired", "failed"]:
             with suppress(Exception):
@@ -219,7 +217,6 @@ async def main(message: cl.Message) -> None:
 
     await initialize()
 
-    async_openai_client = get_openai_client()
     thread_id = await get_thread_id(async_openai_client)
 
     if not thread_id:
