@@ -12,7 +12,6 @@ param name string
   'eastus2'
   'northcentralus'
   'southcentralus'
-  'spaincentral'
   'swedencentral'
   'westus'
   'westus3'
@@ -41,7 +40,7 @@ param assistantPassword string = substring(uniqueString(subscription().id, name,
 @description('Whether the deployment is running on GitHub Actions')
 param runningOnGh string = ''
 
-var resourceToken = toLower(uniqueString(subscription().id, name, location))
+var resourceToken = 'a${toLower(uniqueString(subscription().id, name, location))}'
 var tags = { 'azd-env-name': name }
 
 resource resourceGroup 'Microsoft.Resources/resourceGroups@2021-04-01' = {
@@ -50,7 +49,7 @@ resource resourceGroup 'Microsoft.Resources/resourceGroups@2021-04-01' = {
   tags: tags
 }
 
-var prefix = '${name}-${resourceToken}'
+// var prefix = '${name}-${resourceToken}'
 
 var openAiDeploymentName = 'gpt-4o'
 var openAiDeploymentVersion = '2024-08-06'
@@ -97,7 +96,7 @@ module logAnalyticsWorkspace 'core/monitor/loganalytics.bicep' = {
   name: 'loganalytics'
   scope: resourceGroup
   params: {
-    name: '${prefix}-loganalytics'
+    name: '${resourceToken}-loganalytics'
     location: location
     tags: tags
   }
@@ -111,8 +110,8 @@ module containerApps 'core/host/container-apps.bicep' = {
     name: 'app'
     location: location
     tags: tags
-    containerAppsEnvironmentName: '${prefix}-containerapps-env'
-    containerRegistryName: '${replace(prefix, '-', '')}registry'
+    containerAppsEnvironmentName: '${resourceToken}-containerapps-env'
+    containerRegistryName: '${replace(resourceToken, '-', '')}registry'
     logAnalyticsWorkspaceName: logAnalyticsWorkspace.outputs.name
   }
 }
@@ -122,10 +121,10 @@ module aca 'aca.bicep' = {
   name: 'aca'
   scope: resourceGroup
   params: {
-    name: replace('${take(prefix,19)}-ca', '--', '-')
+    name: replace('${take(resourceToken,19)}-ca', '--', '-')
     location: location
     tags: tags
-    identityName: '${prefix}-id-aca'
+    identityName: '${resourceToken}-id-aca'
     containerAppsEnvironmentName: containerApps.outputs.environmentName
     containerRegistryName: containerApps.outputs.registryName
     assistantId: deploymentScriptModule.outputs.assistantId
