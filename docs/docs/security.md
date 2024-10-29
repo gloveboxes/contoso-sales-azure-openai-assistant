@@ -12,6 +12,6 @@ In enterprise scenarios, data is extracted and transformed from transactional sy
 
 It’s crucial to secure the Azure OpenAI resources used in the app with [Azure RBAC](https://learn.microsoft.com/training/modules/secure-azure-resources-with-rbac/) to prevent unauthorized access. Without proper security, anyone with access to the Azure OpenAI Assistants API could interact with the assistant and potentially gain access to sensitive data.
 
-## The Azure AI Proxy
+<!-- ## The Azure AI Proxy
 
-The [Azure AI Proxy](https://github.com/microsoft/azure-openai-service-proxy/) provides a secure way to interact with the Azure OpenAI Assistants API. It acts as a middleman between the app and the Azure OpenAI Assistants API, ensuring the API is only accessible to authorized users and that the data exchanged between the app and the API is secure.
+The [Azure AI Proxy](https://github.com/microsoft/azure-openai-service-proxy/) provides a secure way to interact with the Azure OpenAI Assistants API. It acts as a middleman between the app and the Azure OpenAI Assistants API, ensuring the API is only accessible to authorized users and that the data exchanged between the app and the API is secure. -->
