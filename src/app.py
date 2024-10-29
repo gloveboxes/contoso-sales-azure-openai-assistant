@@ -17,7 +17,7 @@ from sales_data import SalesData
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-load_dotenv("env/.env", override=True)
+load_dotenv("src/.env", override=True)
 
 AZURE_OPENAI_ENDPOINT = os.environ.get("AZURE_OPENAI_ENDPOINT")
 AZURE_OPENAI_API_KEY = os.environ.get("AZURE_OPENAI_API_KEY")
