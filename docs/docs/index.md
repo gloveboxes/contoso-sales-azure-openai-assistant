@@ -14,7 +14,21 @@ The app is built with [Azure OpenAI GPT-4o](https://learn.microsoft.com/azure/ai
 
 The app uses a read-only SQLite Contoso Sales Database with 40,000 rows of synthetic data. When the app starts, it reads the sales database schema, product categories, product types, and reporting years, then adds this info to the Azure OpenAI Assistants API instruction context.
 
+## Azure OpenAI Assistants API as an Orchestrator
+
+The OpenAI Assistants API acts as an orchestrator, managing multiple tools and functions based on user input. Using parameters like tool_choice, it directs tasks to the right tools seamlessly within a single request, maintaining context across workflows. This orchestration reduces backend complexity, allowing developers to focus on core functionality while the API dynamically handles multi-tool automation, making it ideal for sophisticated applications.
+
 ## Why use the Azure OpenAI Assistants API?
+
+The following table compares the Azure OpenAI Assistants API with the Chat Completions API.
+
+| Chat Completions API              | Assistants API                               |
+|----------------------------------|----------------------------------------------|
+| Stateless            | Stateful with persistant threads                                     |
+| Lightweight and powerful            | Automatic context management                |
+| Action Tools<br>- Function calling                | Multiple tools in parallel                  |
+|                                   | Action Tools<br>- Code Interpreter<br>- Function calling                                 |
+|                                   | Knowledge tools<br>- File Search in multiple formats                              |
 
 The Azure OpenAI Assistants API makes it easier to build Generative AI apps by simplifying key tasks:
 
@@ -24,6 +38,12 @@ The Azure OpenAI Assistants API makes it easier to build Generative AI apps by s
 4. **Powerful native tools and 3rd Party extensibility**: Access up to 128 tools in parallel including functions, code interpreter, and file search.
 5. **Scalability**: It scales effortlessly, managing workloads and resources automatically to handle both small and large user bases.
 6. **Context Execution**: The API lets you define and run context against an LLM, making it easier to perform tasks like data queries or code generation based on specific instructions.
+
+## Solution Architecture
+
+The Contoso Sales Assistant integrates Azure OpenAI Assistants API with Chainlit to deliver a streamlined conversational experience. The Azure OpenAI Assistants API manages conversation flow, orchestrates tools, and generates responses, while Chainlit provides the conversational web interface for users. The LLM generates SQL queries, Python code, and other responses based on user input, and the app uses the Azure OpenAI Assistants API to execute these tasks.
+
+![](media/architecture.png)
 
 ## Assistants components
 
