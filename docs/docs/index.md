@@ -26,6 +26,15 @@ The OpenAI Assistants API acts as an orchestrator, managing multiple tools and f
 
 ## Why use the Azure OpenAI Assistants API?
 
+The Azure OpenAI Assistants API makes it easier to build Generative AI apps by simplifying key tasks:
+
+1. **Stateful**: builtin conversation state management.
+2. **Reduced development effort**: Abstracts the complexities of integrating AI allowing developers to focus on building features rather than managing the AI model interaction.
+3. **Context Management**: The API automatically handles conversation context, ensuring the AI provides relevant, coherent responses throughout interactions.
+4. **Powerful native tools and 3rd Party extensibility**: Access up to 128 tools in parallel including functions, code interpreter, and file search.
+5. **Scalability**: It scales effortlessly, managing workloads and resources automatically to handle both small and large user bases.
+6. **Context Execution**: The API lets you define and run context against an LLM, making it easier to perform tasks like data queries or code generation based on specific instructions.
+
 The following table compares the Azure OpenAI Assistants API with the Chat Completions API.
 
 | Chat Completions API              | Assistants API                               |
@@ -35,15 +44,6 @@ The following table compares the Azure OpenAI Assistants API with the Chat Compl
 | Action Tools<br>- Function calling                | Multiple tools in parallel                  |
 |                                   | Action Tools<br>- Code Interpreter<br>- Function calling                                 |
 |                                   | Knowledge tools<br>- File Search in multiple formats                              |
-
-The Azure OpenAI Assistants API makes it easier to build Generative AI apps by simplifying key tasks:
-
-1. **Stateful**: builtin conversation state management.
-2. **Reduced development effort**: Abstracts the complexities of integrating AI allowing developers to focus on building features rather than managing the AI model interaction.
-3. **Context Management**: The API automatically handles conversation context, ensuring the AI provides relevant, coherent responses throughout interactions.
-4. **Powerful native tools and 3rd Party extensibility**: Access up to 128 tools in parallel including functions, code interpreter, and file search.
-5. **Scalability**: It scales effortlessly, managing workloads and resources automatically to handle both small and large user bases.
-6. **Context Execution**: The API lets you define and run context against an LLM, making it easier to perform tasks like data queries or code generation based on specific instructions.
 
 ## Assistants components
 
