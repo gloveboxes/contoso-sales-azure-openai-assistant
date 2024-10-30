@@ -1,6 +1,6 @@
 # Contoso Sales Assistant
 
-Published at [Contoso Sales Assistant Docs](https://gloveboxes.github.io/contoso-sales-azure-openai-assistant/)
+Published at [Contoso Sales Assistant Docs](https://azure-samples.github.io/contoso-sales-azure-openai-assistants-api/)
 
 ## MKDocs
 
