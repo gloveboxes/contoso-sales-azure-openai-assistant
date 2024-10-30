@@ -16,7 +16,7 @@ The app uses a read-only SQLite Contoso Sales Database with 40,000 rows of synth
 
 The Contoso Sales Assistant app is deployed to Azure using Azure Container Apps. The app is fully asynchronous, uses the FastAPI framework, and streams all responses to users in real-time.
 
-![high level view of the app architecture](media/architecture.png)
+![high level view of the app architecture](media/Architecture.png)
 
 <!-- The Contoso Sales Assistant integrates Azure OpenAI Assistants API with Chainlit to deliver a streamlined conversational experience. The Azure OpenAI Assistants API manages conversation flow, orchestrates tools, and generates responses, while Chainlit provides the conversational web interface for users. The LLM generates SQL queries, Python code, and other responses based on user input, and the app uses the Azure OpenAI Assistants API to execute these tasks. -->
 
