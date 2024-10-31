@@ -2,7 +2,7 @@
 
 ## Documentation
 
-See the full documentation at [Contoso Sales Assistant](https://gloveboxes.github.io/contoso-sales-azure-openai-assistant/)
+See the full documentation at [Contoso Sales Assistant](https://azure-samples.github.io/contoso-sales-azure-openai-assistants-api/)
 
 The documentation includes:
 
