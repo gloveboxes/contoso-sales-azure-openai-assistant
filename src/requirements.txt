@@ -2,6 +2,7 @@ aiosqlite>=0.20.0, <1.0.0
 chainlit==1.2.0
 httpx>=0.27.2, <1.0.0
 openai>=1.51.0, <2.0.0
+pydantic==2.10.1
 pandas>=2.2.3, <3.0.0
 pillow>=10.4.0, <11.0.0
 python_dotenv>=1.0.1, <2.0.0
