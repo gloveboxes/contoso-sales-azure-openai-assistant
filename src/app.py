@@ -244,7 +244,7 @@ async def main(message: cl.Message) -> None:
                 assistant_name=assistant.name,
                 async_openai_client=async_openai_client,
             ),
-            temperature=0.3,
+            temperature=0.2,
         ) as stream:
             await stream.until_done()
 
