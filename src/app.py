@@ -200,7 +200,7 @@ async def get_attachments(message: cl.Message, async_openai_client: AsyncAzureOp
             message_files.append({"file_id": uploaded_file.id, "tools": [{"type": "file_search"}]})
 
     # Wait a moment for the uploaded files to become available
-    await asyncio.sleep(1)
+    await asyncio.sleep(2)
     await cl.Message(content="Uploading completed.").send()
     return message_files
 
