@@ -100,8 +100,15 @@ class SalesData:
 
         return database_info
 
-    async def ask_database(self: "SalesData", query: str) -> QueryResults:
-        """Function to query SQLite database with a provided SQL query."""
+    async def async_fetch_sales_data_using_sqlite_query(self: "SalesData", query: str) -> QueryResults:
+        """
+        This function is used to answer user questions about Contoso sales data by executing SQLite queries against the database.
+
+        :param sqlite_query: The input should be a well-formed SQLite query to extract information based on the user's question. The query result will be returned as plain text, not in JSON format.
+        :return: A QueryResults object containing the query results in both display and JSON formats.
+        :rtype: QueryResults
+        """
+
         data_results = QueryResults()
 
         try:

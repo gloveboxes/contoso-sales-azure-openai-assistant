@@ -17,3 +17,4 @@ appsettings.*.json
 # AZD
 .azure/
 .files/
+azure_ai_projects-1.0.0b4-py3-none-any.whl

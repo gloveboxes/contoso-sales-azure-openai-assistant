@@ -3,10 +3,17 @@ import logging
 import os
 from contextlib import suppress
 from pathlib import Path
-from typing import Any, Callable, Dict
+from typing import Any, Callable, Dict, Set
 
 import chainlit as cl
 import openai
+from azure.ai.projects.aio import AIProjectClient
+from azure.ai.projects.models import (
+    AsyncFunctionTool,
+    AsyncToolSet,
+    CodeInterpreterTool,
+)
+from azure.identity import DefaultAzureCredential
 from chainlit.config import config
 from dotenv import load_dotenv
 from openai import AsyncAzureOpenAI, AzureOpenAI
@@ -23,32 +30,34 @@ AZURE_OPENAI_ENDPOINT = os.environ.get("AZURE_OPENAI_ENDPOINT")
 AZURE_OPENAI_API_KEY = os.environ.get("AZURE_OPENAI_API_KEY")
 AZURE_OPENAI_API_VERSION = os.environ.get("AZURE_OPENAI_API_VERSION")
 AZURE_OPENAI_ASSISTANT_ID = os.environ.get("AZURE_OPENAI_ASSISTANT_ID")
-AZURE_OPENAI_DEPLOYMENT = os.getenv("AZURE_OPENAI_DEPLOYMENT")
+API_DEPLOYMENT_NAME = os.getenv("API_DEPLOYMEMT_NAME")
 ASSISTANT_PASSWORD = os.getenv("ASSISTANT_PASSWORD")
+PROJECT_CONNECTION_STRING = os.getenv("PROJECT_CONNECTION_STRING")
 
 sales_data = SalesData()
 cl.instrument_openai()
-ASSISTANT_READY = False
+AGENT_READY = False
+agent = None
 
-sync_openai_client = AzureOpenAI(
-    azure_endpoint=AZURE_OPENAI_ENDPOINT,
-    api_key=AZURE_OPENAI_API_KEY,
-    api_version=AZURE_OPENAI_API_VERSION,
+
+async_project_client = AIProjectClient.from_connection_string(
+    credential=DefaultAzureCredential(),
+    conn_str=PROJECT_CONNECTION_STRING,
 )
 
-assistant = sync_openai_client.beta.assistants.retrieve(
-    assistant_id=AZURE_OPENAI_ASSISTANT_ID,
-)
 
-async_openai_client = AsyncAzureOpenAI(
-    azure_endpoint=AZURE_OPENAI_ENDPOINT,
-    api_key=AZURE_OPENAI_API_KEY,
-    api_version=AZURE_OPENAI_API_VERSION,
-)
-
-function_map: Dict[str, Callable[[Any], str]] = {
-    "ask_database": lambda args: sales_data.ask_database(query=args.get("query")),
+async_functions: Set[Callable[..., Any]] = {
+    sales_data.async_fetch_sales_data_using_sqlite_query,
 }
+
+async_function_calling_tool = AsyncFunctionTool(async_functions)
+code_interpreter_tool = CodeInterpreterTool()
+
+code_interpreter_tool = CodeInterpreterTool()
+
+toolset = AsyncToolSet()
+toolset.add(async_function_calling_tool)
+toolset.add(code_interpreter_tool)
 
 
 @cl.password_auth_callback
@@ -64,8 +73,8 @@ async def auth_callback(username: str, password: str) -> cl.User | None:
 
 async def initialize() -> None:
     """Initialize the assistant with the sales data schema and instructions."""
-    global ASSISTANT_READY
-    if ASSISTANT_READY:
+    global AGENT_READY, agent
+    if AGENT_READY:
         return
 
     await sales_data.connect()
@@ -74,7 +83,8 @@ async def initialize() -> None:
     instructions = {
         "You are a polite, professional assistant specializing in Contoso sales data analysis. Provide clear, concise explanations.",
         "Use the `ask_database` function for sales data queries, defaulting to aggregated data unless a detailed breakdown is requested. The function returns JSON data.",
-        f"Reference the following SQLite schema for the sales database: {database_schema_string}.",
+        f"Reference the following SQLite schema for the sales database: {
+            database_schema_string}.",
         "Use the `file_search` tool to retrieve product information from uploaded files when relevant. Prioritize Contoso sales database data over files when responding.",
         "For sales data inquiries, present results in markdown tables by default unless the user requests visualizations.",
         "For visualizations: 1. Write and test code in your sandboxed environment. 2. Use the user's language preferences for visualizations (e.g. chart labels). 3. Display successful visualizations or retry upon error.",
@@ -86,43 +96,17 @@ async def initialize() -> None:
         "Do not include markdown links to visualizations in your responses.",
     }
 
-    tools_list = [
-        {"type": "code_interpreter"},
-        {"type": "file_search"},
-        {
-            "type": "function",
-            "function": {
-                "name": "ask_database",
-                "description": "This function is used to answer user questions about Contoso sales data by executing SQLite queries against the database.",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "query": {
-                            "type": "string",
-                            "description": f"""
-                                The input should be a well-formed SQLite query to extract information based on the user's question.
-                                The query result will be returned as plain text, not in JSON format.
-                            """,
-                        }
-                    },
-                    "required": ["query"],
-                    "additionalProperties": False,
-                },
-            },
-        },
-    ]
-
     try:
-        sync_openai_client.beta.assistants.update(
-            assistant_id=assistant.id,
+        agent = async_project_client.agents.create_agent(
+            model=API_DEPLOYMENT_NAME,
             name="Contoso Sales Assistant",
-            model=AZURE_OPENAI_DEPLOYMENT,
-            instructions=str(instructions),
-            tools=tools_list,
+            instructions="\n".join(instructions),
+            toolset=toolset,
         )
+        print(f"Created agent, ID: {agent.id}")
 
-        config.ui.name = assistant.name
-        ASSISTANT_READY = True
+        config.ui.name = agent.name
+        AGENT_READY = True
     except openai.NotFoundError as e:
         logger.error("Assistant not found: %s", str(e))
     except Exception as e:
@@ -156,15 +140,14 @@ async def set_starters() -> list[cl.Starter]:
     ]
 
 
-async def get_thread_id(async_openai_client: AsyncAzureOpenAI) -> str:
+async def get_thread_id(async_project_client: AIProjectClient) -> str:
     """Get the thread ID for the conversation"""
     if thread := cl.user_session.get("thread_id"):
         return thread
 
     try:
-        thread = await async_openai_client.beta.threads.create()
+        thread = await async_project_client.agents.create_thread()
         cl.user_session.set("thread_id", thread.id)
-        # await cl.Message(content="New thread created.").send()
         return thread.id
     except Exception as e:
         await cl.Message(content=str(e)).send()
@@ -178,31 +161,36 @@ async def cancel_thread_run(thread_id: str) -> None:
 
     # Wait a moment for any pending runs to spin up for cleaner cancellation
     await asyncio.sleep(2)
-    runs = await async_openai_client.beta.threads.runs.list(thread_id=thread_id)
-    for run in runs.data:
-        if run.status not in ["completed", "cancelled", "expired", "failed"]:
-            with suppress(Exception):
-                await client.beta.threads.runs.cancel(run_id=run.id, thread_id=thread_id)
+
+    await async_project_client.agents.delete_thread(thread_id)
+
+    
+    # runs = await async_project_client.beta.threads.runs.list(thread_id=thread_id)
+    # for run in runs.data:
+    #     if run.status not in ["completed", "cancelled", "expired", "failed"]:
+    #         with suppress(Exception):
+    #             await client.beta.threads.runs.cancel(run_id=run.id, thread_id=thread_id)
 
 
 async def get_attachments(message: cl.Message, async_openai_client: AsyncAzureOpenAI) -> Dict:
     """Upload attachments to the assistant"""
-    file_paths = [file.path for file in message.elements]
-    if not file_paths:
-        return None
+    pass
+    # file_paths = [file.path for file in message.elements]
+    # if not file_paths:
+    #     return None
 
-    await cl.Message(content="Uploading files.").send()
-    message_files = []
+    # await cl.Message(content="Uploading files.").send()
+    # message_files = []
 
-    for path in file_paths:
-        with Path(path).open("rb") as file:
-            uploaded_file = await async_openai_client.files.create(file=file, purpose="assistants")
-            message_files.append({"file_id": uploaded_file.id, "tools": [{"type": "file_search"}]})
+    # for path in file_paths:
+    #     with Path(path).open("rb") as file:
+    #         uploaded_file = await async_openai_client.files.create(file=file, purpose="assistants")
+    #         message_files.append({"file_id": uploaded_file.id, "tools": [{"type": "file_search"}]})
 
-    # Wait a moment for the uploaded files to become available
-    await asyncio.sleep(1)
-    await cl.Message(content="Uploading completed.").send()
-    return message_files
+    # # Wait a moment for the uploaded files to become available
+    # await asyncio.sleep(1)
+    # await cl.Message(content="Uploading completed.").send()
+    # return message_files
 
 
 @cl.on_message
@@ -210,14 +198,14 @@ async def main(message: cl.Message) -> None:
     """Handle the conversation with the assistant"""
     completed = False
 
-    if assistant is None:
+    if async_project_client is None:
         await cl.Message(content="An error occurred initializing the assistant.").send()
         logger.error("Assistant not initialized.")
         return
 
     await initialize()
 
-    thread_id = await get_thread_id(async_openai_client)
+    thread_id = await get_thread_id(async_project_client)
 
     if not thread_id:
         await cl.Message(content="A thread wa not successfully created.").send()
@@ -225,28 +213,47 @@ async def main(message: cl.Message) -> None:
         return
 
     try:
-        message_files = await get_attachments(message, async_openai_client)
+        # message_files = await get_attachments(message, async_openai_client)
 
         # Add a Message to the Thread
-        await async_openai_client.beta.threads.messages.create(
+        # await async_openai_client.beta.threads.messages.create(
+        #     thread_id=thread_id,
+        #     role="user",
+        #     content=message.content,
+        #     attachments=message_files,
+        # )
+
+        message = await async_project_client.agents.create_message(
             thread_id=thread_id,
             role="user",
             content=message.content,
-            attachments=message_files,
         )
 
-        # Create and Stream a Run
-        async with async_openai_client.beta.threads.runs.stream(
+        stream = await async_project_client.agents.create_stream(
             thread_id=thread_id,
-            assistant_id=assistant.id,
+            assistant_id=agent.id,
             event_handler=EventHandler(
-                function_map=function_map,
-                assistant_name=assistant.name,
-                async_openai_client=async_openai_client,
-            ),
+                functions=functions, project_client=async_project_client),
+            max_completion_tokens=4096,
+            max_prompt_tokens=4096,
             temperature=0.2,
-        ) as stream:
-            await stream.until_done()
+        )
+
+        async with stream as s:
+            await s.until_done()
+
+        # Create and Stream a Run
+        # async with async_openai_client.beta.threads.runs.stream(
+        #     thread_id=thread_id,
+        #     assistant_id=assistant.id,
+        #     event_handler=EventHandler(
+        #         function_map=function_map,
+        #         assistant_name=assistant.name,
+        #         async_openai_client=async_openai_client,
+        #     ),
+        #     temperature=0.2,
+        # ) as stream:
+        #     await stream.until_done()
 
         completed = True
 
