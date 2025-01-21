@@ -28,7 +28,7 @@ param acaExists bool = false
 param allowedOrigins string = ''
 
 param openAiSkuName string = ''
-param openAiDeploymentCapacity int = 90
+param openAiDeploymentCapacity int = 130
 @secure()
 param chainlitAuthSecret string
 @secure()
