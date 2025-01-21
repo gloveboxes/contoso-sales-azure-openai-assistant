@@ -26,6 +26,9 @@ AZURE_OPENAI_ASSISTANT_ID = os.environ.get("AZURE_OPENAI_ASSISTANT_ID")
 AZURE_OPENAI_DEPLOYMENT = os.getenv("AZURE_OPENAI_DEPLOYMENT")
 ASSISTANT_PASSWORD = os.getenv("ASSISTANT_PASSWORD")
 
+MAX_COMPLETION_TOKENS = 4096
+MAX_PROMPT_TOKENS = 10240
+
 sales_data = SalesData()
 cl.instrument_openai()
 ASSISTANT_READY = False
@@ -71,20 +74,29 @@ async def initialize() -> None:
     await sales_data.connect()
     database_schema_string = await sales_data.get_database_info()
 
-    instructions = {
-        "You are a polite, professional assistant specializing in Contoso sales data analysis. Provide clear, concise explanations.",
-        "Use the `ask_database` function for sales data queries, defaulting to aggregated data unless a detailed breakdown is requested. The function returns JSON data.",
-        f"Reference the following SQLite schema for the sales database: {database_schema_string}.",
-        "Use the `file_search` tool to retrieve product information from uploaded files when relevant. Prioritize Contoso sales database data over files when responding.",
-        "For sales data inquiries, present results in markdown tables by default unless the user requests visualizations.",
-        "For visualizations: 1. Write and test code in your sandboxed environment. 2. Use the user's language preferences for visualizations (e.g. chart labels). 3. Display successful visualizations or retry upon error.",
-        "If asked for 'help,' suggest example queries (e.g., 'What was last quarter's revenue?' or 'Top-selling products in Europe?').",
-        "Only use data from the Contoso sales database or uploaded files to respond. If the query falls outside the available data or your expertise, or you're unsure, reply with: I'm unable to assist with that. Please ask more specific questions about Contoso sales and products or contact IT for further help.",
-        "If faced with aggressive behavior, calmly reply: 'I'm here to help with sales data inquiries. For other issues, please contact IT.'",
-        "Tailor responses to the user's language preferences, including terminology, measurement units, currency, and formats.",
-        "For download requests, respond with: 'The download link is provided below.'",
-        "Do not include markdown links to visualizations in your responses.",
-    }
+    env = os.getenv("ENV", "development")
+    INSTRUCTIONS_FILE = "instructions.txt" if env == "production" else "src/instructions.txt"
+
+    with open(INSTRUCTIONS_FILE, "r", encoding="utf-8", errors="ignore") as file:
+        instructions = file.read()
+
+    # Replace the placeholder with the database schema string
+    instructions = instructions.replace("{database_schema_string}", database_schema_string)
+
+    # instructions = {
+    #     "You are a polite, professional assistant specializing in Contoso sales data analysis. Provide clear, concise explanations.",
+    #     "Use the `ask_database` function for sales data queries, defaulting to aggregated data unless a detailed breakdown is requested. The function returns JSON data.",
+    #     f"Reference the following SQLite schema for the sales database: {database_schema_string}.",
+    #     "Use the `file_search` tool to retrieve product information from uploaded files when relevant. Prioritize Contoso sales database data over files when responding.",
+    #     "For sales data inquiries, present results in markdown tables by default unless the user requests visualizations.",
+    #     "For visualizations: 1. Write and test code in your sandboxed environment. 2. Use the user's language preferences for visualizations (e.g. chart labels). 3. Display successful visualizations or retry upon error. Never include the visualization FilePathAnnotation in the response.",
+    #     "If asked for 'help,' suggest example queries (e.g., 'What was last quarter's revenue?' or 'Top-selling products in Europe?').",
+    #     "Only use data from the Contoso sales database or uploaded files to respond. If the query falls outside the available data or your expertise, or you're unsure, reply with: I'm unable to assist with that. Please ask more specific questions about Contoso sales and products or contact IT for further help.",
+    #     "If faced with aggressive behavior, calmly reply: 'I'm here to help with sales data inquiries. For other issues, please contact IT.'",
+    #     "Tailor responses to the user's language preferences, including terminology, measurement units, currency, and formats.",
+    #     "For download requests, respond with: 'The download link is provided below.'",
+    #     "Do not include markdown links to visualizations in your responses.",
+    # }
 
     tools_list = [
         {"type": "code_interpreter"},
@@ -117,8 +129,8 @@ async def initialize() -> None:
             assistant_id=assistant.id,
             name="Contoso Sales Assistant",
             model=AZURE_OPENAI_DEPLOYMENT,
-            instructions=str(instructions),
-            tools=tools_list,
+            instructions=instructions,
+            tools=tools_list
         )
 
         config.ui.name = assistant.name
@@ -245,6 +257,9 @@ async def main(message: cl.Message) -> None:
                 async_openai_client=async_openai_client,
             ),
             temperature=0.2,
+            max_completion_tokens=MAX_COMPLETION_TOKENS,
+            max_prompt_tokens=MAX_PROMPT_TOKENS,
+            instructions=assistant.instructions
         ) as stream:
             await stream.until_done()
 
